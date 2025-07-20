@@ -58,6 +58,7 @@ app.use('/api/summary', require('./routes/summaryRoutes'));
 app.use('/api/goals', require('./routes/goalRoutes'));
 app.use('/api/meals', require('./routes/mealRoutes'));
 app.use('/api/weight', require('./routes/weightRoutes'));
+app.use('/api/blood-pressure', require('./routes/bloodPressureRoutes'));
 
 // 404 handler
 app.use('*', (req, res) => {

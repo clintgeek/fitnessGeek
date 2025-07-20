@@ -7,7 +7,8 @@ import {
 import {
   Home as HomeIcon,
   Book as FoodLogIcon,
-  MonitorWeight as WeightIcon
+  MonitorWeight as WeightIcon,
+  MonitorHeart as BPIcon
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -20,6 +21,7 @@ const BottomNav = () => {
     if (path === '/dashboard') return 'home';
     if (path === '/food-log') return 'food-log';
     if (path === '/weight') return 'weight';
+    if (path === '/blood-pressure') return 'blood-pressure';
     return 'home';
   };
 
@@ -47,6 +49,9 @@ const BottomNav = () => {
               break;
             case 'weight':
               navigate('/weight');
+              break;
+            case 'blood-pressure':
+              navigate('/blood-pressure');
               break;
             default:
               navigate('/dashboard');
@@ -80,6 +85,11 @@ const BottomNav = () => {
           label="Weight"
           value="weight"
           icon={<WeightIcon />}
+        />
+        <BottomNavigationAction
+          label="BP"
+          value="blood-pressure"
+          icon={<BPIcon />}
         />
       </BottomNavigation>
     </Box>

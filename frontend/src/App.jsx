@@ -14,6 +14,7 @@ import FoodSearch from './pages/FoodSearch.jsx';
 import FoodLog from './pages/FoodLog.jsx';
 import Recipes from './pages/Recipes.jsx';
 import Weight from './pages/Weight.jsx';
+import BloodPressure from './pages/BloodPressure.jsx';
 import Profile from './pages/Profile.jsx';
 import Settings from './pages/Settings.jsx';
 import Goals from './pages/Goals.jsx';
@@ -48,6 +49,7 @@ function App() {
                 <Route path="food-log" element={<FoodLog />} />
                 <Route path="recipes" element={<Recipes />} />
                 <Route path="weight" element={<Weight />} />
+                <Route path="blood-pressure" element={<BloodPressure />} />
                 <Route path="goals" element={<Goals />} />
                 <Route path="profile" element={<Profile />} />
                 <Route path="settings" element={<Settings />} />
