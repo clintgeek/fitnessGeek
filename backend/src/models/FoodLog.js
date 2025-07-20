@@ -1,0 +1,127 @@
+const mongoose = require('mongoose');
+
+const foodLogSchema = new mongoose.Schema({
+  user_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+    index: true
+  },
+  log_date: {
+    type: Date,
+    required: true,
+    index: true
+  },
+  meal_type: {
+    type: String,
+    required: true,
+    enum: ['breakfast', 'lunch', 'dinner', 'snack'],
+    index: true
+  },
+  food_item_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'FoodItem',
+    required: true,
+    index: true
+  },
+  servings: {
+    type: Number,
+    required: true,
+    min: 0.1,
+    max: 100
+  },
+  notes: {
+    type: String,
+    trim: true,
+    maxlength: 500
+  }
+}, {
+  timestamps: {
+    createdAt: 'created_at',
+    updatedAt: 'updatedAt'
+  }
+});
+
+// Compound indexes for better query performance
+foodLogSchema.index({ user_id: 1, log_date: 1 });
+foodLogSchema.index({ user_id: 1, meal_type: 1 });
+foodLogSchema.index({ user_id: 1, food_item_id: 1 });
+
+// Virtual for calculated nutrition values
+foodLogSchema.virtual('calculatedNutrition').get(function() {
+  if (!this.populated('food_item_id')) {
+    return null;
+  }
+
+  const food = this.food_item_id;
+  const multiplier = this.servings;
+
+  return {
+    calories: food.nutrition.calories_per_serving * multiplier,
+    protein_grams: food.nutrition.protein_grams * multiplier,
+    carbs_grams: food.nutrition.carbs_grams * multiplier,
+    fat_grams: food.nutrition.fat_grams * multiplier,
+    fiber_grams: food.nutrition.fiber_grams * multiplier,
+    sugar_grams: food.nutrition.sugar_grams * multiplier,
+    sodium_mg: food.nutrition.sodium_mg * multiplier
+  };
+});
+
+// Static method to get logs for a specific date
+foodLogSchema.statics.getLogsForDate = async function(userId, date) {
+  const startDate = new Date(date);
+  startDate.setHours(0, 0, 0, 0);
+
+  const endDate = new Date(date);
+  endDate.setHours(23, 59, 59, 999);
+
+  return await this.find({
+    user_id: userId,
+    log_date: { $gte: startDate, $lte: endDate }
+  })
+  .populate('food_item_id')
+  .sort({ created_at: -1 });
+};
+
+// Static method to get logs for a date range
+foodLogSchema.statics.getLogsForDateRange = async function(userId, startDate, endDate) {
+  const start = new Date(startDate);
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date(endDate);
+  end.setHours(23, 59, 59, 999);
+
+  return await this.find({
+    user_id: userId,
+    log_date: { $gte: start, $lte: end }
+  })
+  .populate('food_item_id')
+  .sort({ log_date: -1, created_at: -1 });
+};
+
+// Static method to get recent logs
+foodLogSchema.statics.getRecentLogs = async function(userId, limit = 10) {
+  return await this.find({ user_id: userId })
+    .populate('food_item_id')
+    .sort({ created_at: -1 })
+    .limit(limit);
+};
+
+// Static method to get logs by meal type
+foodLogSchema.statics.getLogsByMealType = async function(userId, mealType, date) {
+  const startDate = new Date(date);
+  startDate.setHours(0, 0, 0, 0);
+
+  const endDate = new Date(date);
+  endDate.setHours(23, 59, 59, 999);
+
+  return await this.find({
+    user_id: userId,
+    meal_type: mealType,
+    log_date: { $gte: startDate, $lte: endDate }
+  })
+  .populate('food_item_id')
+  .sort({ created_at: -1 });
+};
+
+module.exports = mongoose.model('FoodLog', foodLogSchema);

@@ -1,0 +1,36 @@
+{
+  "name": "fitnessgeek-backend",
+  "version": "1.0.0",
+  "description": "FitnessGeek Backend API - Nutrition and Fitness Tracking",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "test": "jest"
+  },
+  "keywords": [
+    "fitness",
+    "nutrition",
+    "tracking",
+    "api",
+    "mongodb",
+    "express"
+  ],
+  "author": "Chef (Clint)",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "morgan": "^1.10.0",
+    "mongoose": "^8.0.3",
+    "redis": "^4.6.10",
+    "winston": "^3.11.0",
+    "dotenv": "^16.3.1",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "axios": "^1.6.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
