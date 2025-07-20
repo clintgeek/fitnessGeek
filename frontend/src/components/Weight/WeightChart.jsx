@@ -36,7 +36,11 @@ const WeightChart = ({ data, title, yAxisLabel, goalLine, startWeight, targetWei
   ] : [];
 
   return (
-    <Card sx={{ mb: 3 }}>
+    <Card sx={{
+      backgroundColor: '#fafafa',
+      border: '1px solid #e0e0e0',
+      mb: 2
+    }}>
       <CardContent>
         <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
           {title}

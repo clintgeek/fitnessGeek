@@ -75,9 +75,10 @@ const QuickAddWeight = ({ onAdd, unit = 'lbs' }) => {
       {/* Quick Add Card for desktop */}
       <Card sx={{
         display: { xs: 'none', md: 'block' },
-        mb: 3,
+        mb: 2,
         backgroundColor: theme.palette.primary.light,
-        color: theme.palette.primary.contrastText
+        color: theme.palette.primary.contrastText,
+        border: '1px solid #e0e0e0'
       }}>
         <CardContent>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>

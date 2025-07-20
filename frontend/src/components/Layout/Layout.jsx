@@ -73,8 +73,7 @@ const Layout = () => {
           width: '100%',
           padding: '0 16px',
           display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center'
+          flexDirection: 'column'
         }}>
           <Outlet />
         </Box>

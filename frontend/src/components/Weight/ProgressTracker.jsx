@@ -94,58 +94,76 @@ const ProgressTracker = ({
   const isWeightLoss = targetValue < startValue;
 
   return (
-    <Card sx={{ mb: 3 }}>
+    <Card sx={{
+      backgroundColor: '#fafafa',
+      border: '1px solid #e0e0e0',
+      mb: 2
+    }}>
       <CardContent>
         <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
           {title}
         </Typography>
 
-        <Grid container spacing={2}>
+        <Box sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          width: '100%',
+          gap: 2,
+          flexWrap: { xs: 'wrap', sm: 'nowrap' }
+        }}>
           {/* Progress Values */}
-          <Grid xs={6} sm={3}>
-            <Box textAlign="center" sx={{ width: '100%' }}>
-              <Typography variant="h4" sx={{ fontWeight: 600, color: '#6098CC' }}>
-                {startValue}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Start
-              </Typography>
-            </Box>
-          </Grid>
+          <Box sx={{
+            flex: '1 1 25%',
+            textAlign: 'center',
+            minWidth: { xs: '45%', sm: 'auto' }
+          }}>
+            <Typography variant="h4" sx={{ fontWeight: 600, color: '#6098CC' }}>
+              {startValue}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Start
+            </Typography>
+          </Box>
 
-          <Grid xs={6} sm={3}>
-            <Box textAlign="center" sx={{ width: '100%' }}>
-              <Typography variant="h4" sx={{ fontWeight: 600 }}>
-                {currentValue}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Current
-              </Typography>
-            </Box>
-          </Grid>
+          <Box sx={{
+            flex: '1 1 25%',
+            textAlign: 'center',
+            minWidth: { xs: '45%', sm: 'auto' }
+          }}>
+            <Typography variant="h4" sx={{ fontWeight: 600 }}>
+              {currentValue}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Current
+            </Typography>
+          </Box>
 
-          <Grid xs={6} sm={3}>
-            <Box textAlign="center" sx={{ width: '100%' }}>
-              <Typography variant="h4" sx={{ fontWeight: 600, color: '#6098CC' }}>
-                {targetValue}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Goal
-              </Typography>
-            </Box>
-          </Grid>
+          <Box sx={{
+            flex: '1 1 25%',
+            textAlign: 'center',
+            minWidth: { xs: '45%', sm: 'auto' }
+          }}>
+            <Typography variant="h4" sx={{ fontWeight: 600, color: '#6098CC' }}>
+              {targetValue}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Goal
+            </Typography>
+          </Box>
 
-          <Grid xs={6} sm={3}>
-            <Box textAlign="center" sx={{ width: '100%' }}>
-              <Typography variant="h4" sx={{ fontWeight: 600 }}>
-                {progress.toFixed(1)}%
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Progress
-              </Typography>
-            </Box>
-          </Grid>
-        </Grid>
+          <Box sx={{
+            flex: '1 1 25%',
+            textAlign: 'center',
+            minWidth: { xs: '45%', sm: 'auto' }
+          }}>
+            <Typography variant="h4" sx={{ fontWeight: 600 }}>
+              {progress.toFixed(1)}%
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Progress
+            </Typography>
+          </Box>
+        </Box>
 
         {/* Progress Bar */}
         <Box sx={{ mt: 3, mb: 2 }}>

@@ -106,9 +106,9 @@ const Weight = () => {
   const currentWeight = getCurrentWeight();
 
   return (
-    <Box sx={{ pb: 8 }}> {/* Extra padding for FAB */}
+    <Box sx={{ p: 2, pb: 8 }}> {/* Consistent padding with FoodLog, extra bottom padding for FAB */}
       <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 600, color: '#6098CC' }}>
-        Weight Tracking
+        {/* Weight Tracking */}
       </Typography>
 
       {/* Success/Error Messages */}

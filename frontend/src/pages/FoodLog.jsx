@@ -286,14 +286,14 @@ const FoodLog = () => {
   return (
     <Box sx={{ p: 2 }}>
       {/* Header */}
-      <Box sx={{ mb: 2 }}>
+      {/* <Box sx={{ mb: 2 }}>
         <Typography variant="h6" component="h1" sx={{ fontWeight: 600, mb: 0.5 }}>
           Food Log
         </Typography>
         <Typography variant="body2" color="text.secondary">
           Track your daily nutrition
         </Typography>
-      </Box>
+      </Box> */}
 
       {/* Date Navigation */}
       <Box sx={{
