@@ -97,6 +97,11 @@ const QuickAddWeight = ({ onAdd, unit = 'lbs' }) => {
               onKeyPress={handleKeyPress}
               size="small"
               sx={{ flexGrow: 1 }}
+              inputProps={{
+                step: "0.1",
+                min: "0",
+                max: "1000"
+              }}
               InputProps={{
                 endAdornment: unit
               }}
@@ -136,9 +141,15 @@ const QuickAddWeight = ({ onAdd, unit = 'lbs' }) => {
             onChange={(e) => setValue(e.target.value)}
             onKeyPress={handleKeyPress}
             sx={{ mb: 2, mt: 1 }}
+            inputProps={{
+              step: "0.1",
+              min: "0",
+              max: "1000"
+            }}
             InputProps={{
               endAdornment: unit
             }}
+            helperText="Enter weight to one decimal place (e.g., 150.4)"
             autoFocus
           />
           <TextField

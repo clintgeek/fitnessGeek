@@ -139,7 +139,7 @@ const createWeightLog = async (req, res) => {
 
     const weightLog = new Weight({
       userId,
-      weight_value: parseFloat(weight_value),
+      weight_value: parseFloat(parseFloat(weight_value).toFixed(1)),
       log_date: parsedDate,
       notes: notes || ''
     });
@@ -183,7 +183,7 @@ const updateWeightLog = async (req, res) => {
 
     // Update fields if provided
     if (weight_value !== undefined) {
-      weightLog.weight_value = parseFloat(weight_value);
+      weightLog.weight_value = parseFloat(parseFloat(weight_value).toFixed(1));
     }
     if (log_date !== undefined) {
       // Handle date properly to avoid timezone issues

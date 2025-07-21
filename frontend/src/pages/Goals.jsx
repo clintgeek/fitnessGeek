@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { goalsService } from '../services/goalsService.js';
+import { useAuth } from '../hooks/useAuth.js';
 import {
   Box,
   Card,
@@ -11,7 +13,8 @@ import {
   FormControlLabel,
   Divider,
   Grid,
-  Alert
+  Alert,
+  CircularProgress
 } from '@mui/material';
 import {
   Flag as GoalsIcon,
@@ -20,6 +23,8 @@ import {
 } from '@mui/icons-material';
 
 const Goals = () => {
+  const navigate = useNavigate();
+  const { isAuthenticated, loading } = useAuth();
   const [nutritionGoals, setNutritionGoals] = useState({
     trackMacros: true,
     calories: 2000,
@@ -37,14 +42,29 @@ const Goals = () => {
   });
 
   const [saved, setSaved] = useState(false);
+  const [loadingGoals, setLoadingGoals] = useState(false);
 
-    // Load goals from backend on component mount
+  // Redirect to login if not authenticated
   useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      navigate('/login');
+    }
+  }, [isAuthenticated, loading, navigate]);
+
+  // Load goals from backend on component mount
+  useEffect(() => {
+    if (!isAuthenticated || loading) return;
+
     const loadGoals = async () => {
       try {
+        setLoadingGoals(true);
         const goals = await goalsService.getGoals();
+        console.log('Loaded goals from backend:', goals);
+        console.log('Weight goals check:', goals?.weight);
+        console.log('Weight startWeight:', goals?.weight?.startWeight);
+        console.log('Weight targetWeight:', goals?.weight?.targetWeight);
 
-        if (goals.nutrition) {
+        if (goals && goals.nutrition) {
           setNutritionGoals({
             trackMacros: goals.nutrition.trackMacros || false,
             calories: goals.nutrition.goals?.calories || 2000,
@@ -54,33 +74,43 @@ const Goals = () => {
           });
         }
 
-        if (goals.weight) {
+        // Handle weight goals - only update if we actually have weight data
+        if (goals && goals.weight && goals.weight.startWeight && goals.weight.targetWeight) {
           setWeightGoal({
             enabled: true,
-            startWeight: goals.weight.startWeight || 0,
-            targetWeight: goals.weight.targetWeight || 0,
+            startWeight: goals.weight.startWeight,
+            targetWeight: goals.weight.targetWeight,
             startDate: goals.weight.startDate || new Date().toISOString().split('T')[0],
             goalDate: goals.weight.goalDate || ''
           });
+        } else if (goals && goals.weight === null) {
+          // If backend explicitly returns null for weight, reset to disabled state
+          setWeightGoal({
+            enabled: false,
+            startWeight: 0,
+            targetWeight: 0,
+            startDate: new Date().toISOString().split('T')[0],
+            goalDate: ''
+          });
+        } else {
+          // If no weight goals from backend, keep current state (don't reset to disabled)
+          console.log('No weight goals found in backend, keeping current state');
         }
       } catch (error) {
         console.error('Failed to load goals:', error);
-        // Fallback to localStorage if API fails
-        const savedNutritionGoals = localStorage.getItem('fitnessGeek_nutritionGoals');
-        const savedWeightGoal = localStorage.getItem('fitnessGeek_weightGoal');
 
-        if (savedNutritionGoals) {
-          setNutritionGoals(JSON.parse(savedNutritionGoals));
+        // If authentication error, redirect to login
+        if (error.message && error.message.includes('Unauthorized')) {
+          navigate('/login');
+          return;
         }
-
-        if (savedWeightGoal) {
-          setWeightGoal(JSON.parse(savedWeightGoal));
-        }
+      } finally {
+        setLoadingGoals(false);
       }
     };
 
     loadGoals();
-  }, []);
+  }, [isAuthenticated, loading, navigate]);
 
   // Helper functions for progress tracking
   const calculateWeightProgress = (currentWeight) => {
@@ -163,6 +193,7 @@ const Goals = () => {
     }
 
     try {
+      console.log('Saving goals to backend:', goalsToSave);
       // Save to backend
       await goalsService.saveGoals(goalsToSave);
 
@@ -190,11 +221,17 @@ const Goals = () => {
         Goals & Targets
       </Typography>
 
-      {saved && (
-        <Alert severity="success" sx={{ mb: 2 }}>
-          Goals saved successfully!
-        </Alert>
-      )}
+      {loading || loadingGoals ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+          <CircularProgress />
+        </Box>
+      ) : (
+        <>
+          {saved && (
+            <Alert severity="success" sx={{ mb: 2 }}>
+              Goals saved successfully!
+            </Alert>
+          )}
 
       {/* Nutrition Goals */}
       <Card sx={{ mb: 3 }}>
@@ -311,7 +348,13 @@ const Goals = () => {
                   type="number"
                   value={weightGoal.startWeight}
                   onChange={(e) => handleWeightChange('startWeight', parseFloat(e.target.value) || 0)}
+                  inputProps={{
+                    step: "0.1",
+                    min: "0",
+                    max: "1000"
+                  }}
                   InputProps={{ endAdornment: 'lbs' }}
+                  helperText="Enter to one decimal place"
                 />
               </Grid>
               <Grid item xs={6}>
@@ -321,7 +364,13 @@ const Goals = () => {
                   type="number"
                   value={weightGoal.targetWeight}
                   onChange={(e) => handleWeightChange('targetWeight', parseFloat(e.target.value) || 0)}
+                  inputProps={{
+                    step: "0.1",
+                    min: "0",
+                    max: "1000"
+                  }}
                   InputProps={{ endAdornment: 'lbs' }}
+                  helperText="Enter to one decimal place"
                 />
               </Grid>
               <Grid item xs={6}>
@@ -403,6 +452,8 @@ const Goals = () => {
           Save Goals
         </Button>
       </Box>
+        </>
+      )}
     </Box>
   );
 };

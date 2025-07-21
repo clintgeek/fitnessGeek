@@ -130,7 +130,10 @@ const Weight = () => {
 
       {/* Weight Chart */}
       {weightLogs.length > 0 && (
-        <WeightChart
+        <>
+          {console.log('Weight page - weightLogs:', weightLogs)}
+          {console.log('Weight page - weightGoal:', weightGoal)}
+                  <WeightChart
           data={weightLogs}
           title="Weight Trend"
           yAxisLabel="Weight (lbs)"
@@ -138,6 +141,7 @@ const Weight = () => {
           startWeight={weightGoal?.startWeight}
           targetWeight={weightGoal?.targetWeight}
         />
+        </>
       )}
 
       {/* Quick Add Weight */}

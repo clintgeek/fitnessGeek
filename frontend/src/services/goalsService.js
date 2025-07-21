@@ -5,7 +5,7 @@ export const goalsService = {
   async getGoals() {
     try {
       const response = await apiService.get('/goals');
-      return response.data.data; // Extract data from success wrapper
+      return response.data; // Extract data from success wrapper
     } catch (error) {
       console.error('Error fetching goals:', error);
       throw error;

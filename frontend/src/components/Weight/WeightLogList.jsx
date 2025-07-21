@@ -97,7 +97,7 @@ const WeightLogList = ({ logs, onDelete, unit = 'lbs' }) => {
                         primary={
                           <Box sx={{ display: 'flex', alignItems: 'center' }}>
                             <Typography variant="h6" sx={{ fontWeight: 600, mr: 1 }}>
-                              {log.weight_value} {unit}
+                              {parseFloat(log.weight_value).toFixed(1)} {unit}
                             </Typography>
                             {changeIndicator}
                             {changeText}
