@@ -2,8 +2,7 @@ const mongoose = require('mongoose');
 
 const foodLogSchema = new mongoose.Schema({
   user_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    type: String,
     required: true,
     index: true
   },
@@ -34,12 +33,45 @@ const foodLogSchema = new mongoose.Schema({
     type: String,
     trim: true,
     maxlength: 500
+  },
+  // Store nutrition information at the time of logging (in case food item changes later)
+  nutrition: {
+    calories_per_serving: {
+      type: Number,
+      default: 0
+    },
+    protein_grams: {
+      type: Number,
+      default: 0
+    },
+    carbs_grams: {
+      type: Number,
+      default: 0
+    },
+    fat_grams: {
+      type: Number,
+      default: 0
+    },
+    fiber_grams: {
+      type: Number,
+      default: 0
+    },
+    sugar_grams: {
+      type: Number,
+      default: 0
+    },
+    sodium_mg: {
+      type: Number,
+      default: 0
+    }
   }
 }, {
   timestamps: {
     createdAt: 'created_at',
     updatedAt: 'updatedAt'
-  }
+  },
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
 });
 
 // Compound indexes for better query performance
@@ -49,21 +81,20 @@ foodLogSchema.index({ user_id: 1, food_item_id: 1 });
 
 // Virtual for calculated nutrition values
 foodLogSchema.virtual('calculatedNutrition').get(function() {
-  if (!this.populated('food_item_id')) {
-    return null;
-  }
-
-  const food = this.food_item_id;
   const multiplier = this.servings;
 
+  // Use stored nutrition data if available, otherwise use food item nutrition
+  const nutrition = this.nutrition || {};
+  const food = this.populated('food_item_id') ? this.food_item_id : null;
+
   return {
-    calories: food.nutrition.calories_per_serving * multiplier,
-    protein_grams: food.nutrition.protein_grams * multiplier,
-    carbs_grams: food.nutrition.carbs_grams * multiplier,
-    fat_grams: food.nutrition.fat_grams * multiplier,
-    fiber_grams: food.nutrition.fiber_grams * multiplier,
-    sugar_grams: food.nutrition.sugar_grams * multiplier,
-    sodium_mg: food.nutrition.sodium_mg * multiplier
+    calories: (nutrition.calories_per_serving || (food?.nutrition?.calories_per_serving || 0)) * multiplier,
+    protein_grams: (nutrition.protein_grams || (food?.nutrition?.protein_grams || 0)) * multiplier,
+    carbs_grams: (nutrition.carbs_grams || (food?.nutrition?.carbs_grams || 0)) * multiplier,
+    fat_grams: (nutrition.fat_grams || (food?.nutrition?.fat_grams || 0)) * multiplier,
+    fiber_grams: (nutrition.fiber_grams || (food?.nutrition?.fiber_grams || 0)) * multiplier,
+    sugar_grams: (nutrition.sugar_grams || (food?.nutrition?.sugar_grams || 0)) * multiplier,
+    sodium_mg: (nutrition.sodium_mg || (food?.nutrition?.sodium_mg || 0)) * multiplier
   };
 });
 

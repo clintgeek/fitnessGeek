@@ -106,11 +106,13 @@ const createBPLog = async (req, res) => {
     // Check if BP log already exists for the same date
     let checkDate;
     if (log_date) {
-      checkDate = new Date(log_date);
-      checkDate.setHours(0, 0, 0, 0);
+      if (typeof log_date === 'string' && log_date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        checkDate = new Date(log_date + 'T00:00:00');
+      } else {
+        checkDate = new Date(log_date);
+      }
     } else {
       checkDate = new Date();
-      checkDate.setHours(0, 0, 0, 0);
     }
 
     const existingLog = await BloodPressure.findOne({
@@ -129,12 +131,26 @@ const createBPLog = async (req, res) => {
       });
     }
 
+    // Handle date properly to avoid timezone issues
+    let logDate;
+    if (log_date) {
+      // If it's just a date string (YYYY-MM-DD), treat it as local time
+      if (typeof log_date === 'string' && log_date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        // Create date in local timezone by adding time component
+        logDate = new Date(log_date + 'T00:00:00');
+      } else {
+        logDate = new Date(log_date);
+      }
+    } else {
+      logDate = new Date();
+    }
+
     const bpLog = new BloodPressure({
       userId,
       systolic: parseInt(systolic),
       diastolic: parseInt(diastolic),
       pulse: pulse ? parseInt(pulse) : null,
-      log_date: log_date || new Date(),
+      log_date: logDate,
       notes: notes || ''
     });
 
@@ -195,7 +211,15 @@ const updateBPLog = async (req, res) => {
     bpLog.systolic = parseInt(systolic);
     bpLog.diastolic = parseInt(diastolic);
     bpLog.pulse = pulse ? parseInt(pulse) : null;
-    if (log_date) bpLog.log_date = new Date(log_date);
+    if (log_date) {
+      // Handle date properly to avoid timezone issues
+      if (typeof log_date === 'string' && log_date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        // Create date in local timezone by adding time component
+        bpLog.log_date = new Date(log_date + 'T00:00:00');
+      } else {
+        bpLog.log_date = new Date(log_date);
+      }
+    }
     if (notes !== undefined) bpLog.notes = notes;
 
     await bpLog.save();

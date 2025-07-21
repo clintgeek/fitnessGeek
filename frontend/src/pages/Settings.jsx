@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -11,7 +11,17 @@ import {
   ListItemButton,
   Divider,
   Switch,
-  FormControlLabel
+  FormControlLabel,
+  Alert,
+  CircularProgress,
+  Button,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails
 } from '@mui/material';
 import {
   Notifications as NotificationsIcon,
@@ -20,74 +30,299 @@ import {
   Security as SecurityIcon,
   DataUsage as DataIcon,
   Help as HelpIcon,
-  Info as AboutIcon
+  Info as AboutIcon,
+  Dashboard as DashboardIcon,
+  MonitorWeight as WeightIcon,
+  MonitorHeart as BPIcon,
+  LocalDining as FoodIcon,
+  TrendingUp as StreakIcon,
+  Restaurant as NutritionIcon,
+  FlashOn as QuickActionsIcon,
+  Flag as GoalsIcon,
+  ExpandMore as ExpandMoreIcon,
+  Save as SaveIcon
 } from '@mui/icons-material';
+import { settingsService } from '../services/settingsService.js';
+import DashboardOrderSettings from '../components/DashboardOrderSettings';
 
 const Settings = () => {
-  const [notifications, setNotifications] = React.useState(true);
-  const [darkMode, setDarkMode] = React.useState(false);
+  const [settings, setSettings] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  // Load settings on component mount
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    try {
+      setLoading(true);
+      const response = await settingsService.getSettings();
+      setSettings(response.data);
+    } catch (error) {
+      console.error('Error loading settings:', error);
+      setError('Failed to load settings');
+      // Set default settings if loading fails
+      const defaultSettings = {
+        dashboard: settingsService.getDefaultDashboardSettings(),
+        theme: 'light',
+        notifications: { enabled: true, daily_reminder: true, goal_reminders: true },
+        units: { weight: 'lbs', height: 'ft' }
+      };
+      console.log('Settings - defaultSettings:', defaultSettings);
+      setSettings(defaultSettings);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDashboardSettingChange = (setting, value) => {
+    setSettings(prev => ({
+      ...prev,
+      dashboard: {
+        ...prev.dashboard,
+        [setting]: value
+      }
+    }));
+  };
+
+  const handleDashboardOrderChange = (newOrder) => {
+    setSettings(prev => ({
+      ...prev,
+      dashboard: {
+        ...prev.dashboard,
+        card_order: newOrder
+      }
+    }));
+  };
+
+  const handleNotificationSettingChange = (setting, value) => {
+    setSettings(prev => ({
+      ...prev,
+      notifications: {
+        ...prev.notifications,
+        [setting]: value
+      }
+    }));
+  };
+
+  const handleUnitSettingChange = (type, value) => {
+    setSettings(prev => ({
+      ...prev,
+      units: {
+        ...prev.units,
+        [type]: value
+      }
+    }));
+  };
+
+  const handleThemeChange = (theme) => {
+    setSettings(prev => ({
+      ...prev,
+      theme
+    }));
+  };
+
+  const saveSettings = async () => {
+    try {
+      setSaving(true);
+      setError('');
+      setSuccess('');
+
+      await settingsService.updateSettings(settings);
+      setSuccess('Settings saved successfully!');
+
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      setError('Failed to save settings');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (!settings) {
+    return (
+      <Box sx={{ p: 2 }}>
+        <Alert severity="error">Failed to load settings</Alert>
+      </Box>
+    );
+  }
 
   return (
-    <Box sx={{ p: 2, width: '100%', maxWidth: 600 }}>
+    <Box sx={{ p: 2, width: '100%', maxWidth: 800 }}>
       {/* Header */}
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h6" component="h1" sx={{ fontWeight: 600, mb: 0.5 }}>
-          Settings
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Customize your FitnessGeek experience
-        </Typography>
+      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Box>
+          <Typography variant="h4" component="h1" sx={{ fontWeight: 600, mb: 0.5, color: '#6098CC' }}>
+            Settings
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            Customize your FitnessGeek experience
+          </Typography>
+        </Box>
+        <Button
+          variant="contained"
+          startIcon={<SaveIcon />}
+          onClick={saveSettings}
+          disabled={saving}
+          sx={{ backgroundColor: '#6098CC' }}
+        >
+          {saving ? <CircularProgress size={20} /> : 'Save Settings'}
+        </Button>
       </Box>
 
-      {/* Notifications */}
-      <Card sx={{ mb: 2 }}>
-        <CardContent sx={{ p: 0 }}>
-          <List>
-            <ListItem>
-              <ListItemIcon>
-                <NotificationsIcon />
-              </ListItemIcon>
-              <ListItemText
-                primary="Notifications"
-                secondary="Get reminders and updates"
-              />
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={notifications}
-                    onChange={(e) => setNotifications(e.target.checked)}
-                  />
-                }
-                label=""
-              />
-            </ListItem>
-          </List>
-        </CardContent>
-      </Card>
+      {/* Success/Error Messages */}
+      {success && (
+        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess('')}>
+          {success}
+        </Alert>
+      )}
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
+          {error}
+        </Alert>
+      )}
+
+      {/* Dashboard Configuration */}
+      <Accordion defaultExpanded sx={{ mb: 2 }}>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <ListItemIcon>
+            <DashboardIcon sx={{ color: '#6098CC' }} />
+          </ListItemIcon>
+          <ListItemText
+            primary="Dashboard Configuration"
+            secondary="Choose which components to show on your dashboard"
+          />
+        </AccordionSummary>
+        <AccordionDetails>
+          <DashboardOrderSettings
+            settings={settings.dashboard}
+            onSettingsChange={handleDashboardSettingChange}
+            onOrderChange={handleDashboardOrderChange}
+          />
+        </AccordionDetails>
+      </Accordion>
 
       {/* Appearance */}
       <Card sx={{ mb: 2 }}>
-        <CardContent sx={{ p: 0 }}>
-          <List>
-            <ListItem>
-              <ListItemIcon>
-                <ThemeIcon />
-              </ListItemIcon>
-              <ListItemText
-                primary="Dark Mode"
-                secondary="Switch to dark theme"
+        <CardContent>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            <ThemeIcon sx={{ mr: 1, color: '#6098CC' }} />
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              Appearance
+            </Typography>
+          </Box>
+
+          <FormControl fullWidth sx={{ mb: 2 }}>
+            <InputLabel>Theme</InputLabel>
+            <Select
+              value={settings.theme}
+              onChange={(e) => handleThemeChange(e.target.value)}
+              label="Theme"
+            >
+              <MenuItem value="light">Light</MenuItem>
+              <MenuItem value="dark">Dark</MenuItem>
+              <MenuItem value="auto">Auto (System)</MenuItem>
+            </Select>
+          </FormControl>
+        </CardContent>
+      </Card>
+
+      {/* Notifications */}
+      <Card sx={{ mb: 2 }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            <NotificationsIcon sx={{ mr: 1, color: '#6098CC' }} />
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              Notifications
+            </Typography>
+          </Box>
+
+          <FormControlLabel
+            control={
+              <Switch
+                checked={settings.notifications.enabled}
+                onChange={(e) => handleNotificationSettingChange('enabled', e.target.checked)}
               />
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={darkMode}
-                    onChange={(e) => setDarkMode(e.target.checked)}
-                  />
-                }
-                label=""
+            }
+            label="Enable Notifications"
+            sx={{ mb: 1 }}
+          />
+
+          <FormControlLabel
+            control={
+              <Switch
+                checked={settings.notifications.daily_reminder}
+                onChange={(e) => handleNotificationSettingChange('daily_reminder', e.target.checked)}
+                disabled={!settings.notifications.enabled}
               />
-            </ListItem>
-          </List>
+            }
+            label="Daily Reminders"
+            sx={{ mb: 1 }}
+          />
+
+          <FormControlLabel
+            control={
+              <Switch
+                checked={settings.notifications.goal_reminders}
+                onChange={(e) => handleNotificationSettingChange('goal_reminders', e.target.checked)}
+                disabled={!settings.notifications.enabled}
+              />
+            }
+            label="Goal Reminders"
+          />
+        </CardContent>
+      </Card>
+
+      {/* Units */}
+      <Card sx={{ mb: 2 }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            <LanguageIcon sx={{ mr: 1, color: '#6098CC' }} />
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              Units
+            </Typography>
+          </Box>
+
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+            <FormControl fullWidth>
+              <InputLabel>Weight Units</InputLabel>
+              <Select
+                value={settings.units.weight}
+                onChange={(e) => handleUnitSettingChange('weight', e.target.value)}
+                label="Weight Units"
+              >
+                <MenuItem value="lbs">Pounds (lbs)</MenuItem>
+                <MenuItem value="kg">Kilograms (kg)</MenuItem>
+              </Select>
+            </FormControl>
+
+            <FormControl fullWidth>
+              <InputLabel>Height Units</InputLabel>
+              <Select
+                value={settings.units.height}
+                onChange={(e) => handleUnitSettingChange('height', e.target.value)}
+                label="Height Units"
+              >
+                <MenuItem value="ft">Feet/Inches (ft)</MenuItem>
+                <MenuItem value="cm">Centimeters (cm)</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
         </CardContent>
       </Card>
 
@@ -95,16 +330,6 @@ const Settings = () => {
       <Card sx={{ mb: 2 }}>
         <CardContent sx={{ p: 0 }}>
           <List>
-            <ListItemButton>
-              <ListItemIcon>
-                <LanguageIcon />
-              </ListItemIcon>
-              <ListItemText
-                primary="Language"
-                secondary="English"
-              />
-            </ListItemButton>
-            <Divider />
             <ListItemButton>
               <ListItemIcon>
                 <SecurityIcon />

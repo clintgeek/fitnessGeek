@@ -12,6 +12,7 @@ import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
 import FoodSearch from './pages/FoodSearch.jsx';
 import FoodLog from './pages/FoodLog.jsx';
+import MyFoods from './pages/MyFoods.jsx';
 import Recipes from './pages/Recipes.jsx';
 import Weight from './pages/Weight.jsx';
 import BloodPressure from './pages/BloodPressure.jsx';
@@ -47,6 +48,7 @@ function App() {
                 <Route path="dashboard" element={<Dashboard />} />
                 <Route path="food-search" element={<FoodSearch />} />
                 <Route path="food-log" element={<FoodLog />} />
+                <Route path="my-foods" element={<MyFoods />} />
                 <Route path="recipes" element={<Recipes />} />
                 <Route path="weight" element={<Weight />} />
                 <Route path="blood-pressure" element={<BloodPressure />} />

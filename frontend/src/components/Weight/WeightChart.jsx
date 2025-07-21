@@ -19,9 +19,7 @@ import {
 const WeightChart = ({ data, title, yAxisLabel, goalLine, startWeight, targetWeight }) => {
   const theme = useTheme();
 
-  // Debug: Log the incoming data
-  console.log('WeightChart data:', data);
-  console.log('WeightChart goalLine:', goalLine, 'startWeight:', startWeight, 'targetWeight:', targetWeight);
+
 
   // Format data for chart and sort by date (oldest to newest)
   const chartData = data
@@ -35,7 +33,7 @@ const WeightChart = ({ data, title, yAxisLabel, goalLine, startWeight, targetWei
     }))
     .sort((a, b) => new Date(a.fullDate) - new Date(b.fullDate)); // Sort oldest to newest
 
-  console.log('WeightChart formatted data:', chartData);
+
 
       // Create goal line data that spans the actual date range
   let combinedData = [...chartData];
@@ -66,7 +64,7 @@ const WeightChart = ({ data, title, yAxisLabel, goalLine, startWeight, targetWei
     });
   }
 
-  console.log('WeightChart combined data:', combinedData);
+
 
   return (
     <Card sx={{

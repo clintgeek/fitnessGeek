@@ -1,6 +1,6 @@
 {
   "name": "fitnessgeek-backend",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "FitnessGeek Backend API - Nutrition and Fitness Tracking",
   "main": "src/server.js",
   "scripts": {

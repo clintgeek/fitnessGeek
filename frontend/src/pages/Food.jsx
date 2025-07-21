@@ -18,6 +18,7 @@ import {
 } from '@mui/material';
 import { FoodSearch } from '../components/FoodSearch';
 import { fitnessGeekService } from '../services/fitnessGeekService.js';
+import { getTodayLocal } from '../utils/dateUtils.js';
 
 const Food = () => {
   const [selectedFood, setSelectedFood] = useState(null);
@@ -42,7 +43,8 @@ const Food = () => {
         food_item: food,
         servings: servingsCount,
         meal_type: meal,
-        log_date: new Date().toISOString().split('T')[0]
+        log_date: getTodayLocal(),
+        nutrition: food.nutrition || food.original_nutrition || {}
       });
 
       setSuccessMessage(`${food.name} added to your log!`);

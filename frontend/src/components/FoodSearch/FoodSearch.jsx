@@ -455,7 +455,8 @@ const FoodSearch = ({
     const sourceIcon = getSourceIcon(food.source);
     const isMeal = food.type === 'meal';
     const isCustom = food.source === 'custom' || food.source === 'meal';
-    const canEdit = isCustom; // Only custom foods and meals can be edited
+    // Allow editing/deleting of any saved food (custom, API-sourced, or meals)
+    const canEdit = isCustom || food._id; // Any food with an _id has been saved locally
 
     return (
       <ListItem

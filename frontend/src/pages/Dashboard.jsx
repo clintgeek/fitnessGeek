@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Grid,
@@ -9,307 +9,760 @@ import {
   Chip,
   LinearProgress,
   Avatar,
-  Divider
+  Divider,
+  Alert,
+  CircularProgress,
+  IconButton,
+  Tooltip
 } from '@mui/material';
 import {
   Restaurant as FoodIcon,
   MonitorWeight as WeightIcon,
-  Flag as GoalsIcon,
+  MonitorHeart as BPIcon,
   TrendingUp as TrendingIcon,
+  TrendingDown as TrendingDownIcon,
   Add as AddIcon,
-  CalendarToday as CalendarIcon
+  CalendarToday as CalendarIcon,
+  LocalFireDepartment as StreakIcon,
+  CheckCircle as CheckIcon,
+  Warning as WarningIcon,
+  Error as ErrorIcon,
+  Info as InfoIcon,
+  RestaurantMenu as NutritionIcon
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth.js';
+import { useNavigate } from 'react-router-dom';
+import { fitnessGeekService } from '../services/fitnessGeekService.js';
+import { weightService } from '../services/weightService.js';
+import { bpService } from '../services/bpService.js';
+import { goalsService } from '../services/goalsService.js';
+import { settingsService } from '../services/settingsService.js';
 
 const Dashboard = () => {
-  const { user } = useAuth();
+  const { user: _user } = useAuth();
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  // Mock data - will be replaced with real API calls
-  const mockData = {
-    todayCalories: 1200,
-    targetCalories: 2000,
-    todayWeight: 180.5,
-    weeklyChange: -0.5,
-    goals: [
-      { name: 'Lose 10 lbs', progress: 60, target: 'Dec 31, 2024', priority: 'high' },
-      { name: 'Run 5K', progress: 30, target: 'Jan 15, 2025', priority: 'medium' }
-    ]
-  };
+  // Dashboard data state
+  const [todaySummary, setTodaySummary] = useState(null);
+  const [weightStats, setWeightStats] = useState(null);
+  const [latestBP, setLatestBP] = useState(null);
+  const [weeklyBP, setWeeklyBP] = useState(null);
+  const [goals, setGoals] = useState(null);
+  const [loginStreak, setLoginStreak] = useState({ current: 0, longest: 0 });
+  const [dashboardSettings, setDashboardSettings] = useState(settingsService.getDefaultDashboardSettings());
 
-  const calorieProgress = (mockData.todayCalories / mockData.targetCalories) * 100;
+  // Load dashboard data
+  useEffect(() => {
+    const loadDashboardData = async () => {
+      setLoading(true);
+      try {
+        console.log('Starting to load dashboard data...');
 
-  const getPriorityColor = (priority) => {
-    switch (priority) {
-      case 'high': return '#f44336';
-      case 'medium': return '#ff9800';
-      case 'low': return '#4caf50';
-      default: return '#6098CC';
-    }
-  };
+        // Load data in parallel
+        const [
+          summaryData,
+          weightData,
+          bpData,
+          goalsData,
+          settingsData
+        ] = await Promise.allSettled([
+          fitnessGeekService.getTodaySummary(),
+          weightService.getWeightStats(),
+          bpService.getBPLogs({ limit: 7 }),
+          goalsService.getGoals(),
+          settingsService.getSettings()
+        ]);
 
-    return (
-    <Box sx={{ p: 2 }}>
-      {/* Header */}
-      <Box sx={{ mb: 2 }}>
-        <Typography variant="h6" component="h1" sx={{ fontWeight: 600, mb: 0.5 }}>
-          Welcome back, {user?.username || 'User'}! 👋
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Here's your fitness overview for today
-        </Typography>
-      </Box>
+        console.log('All API calls completed:', {
+          summaryData: summaryData.status,
+          weightData: weightData.status,
+          bpData: bpData.status,
+          goalsData: goalsData.status,
+          settingsData: settingsData.status
+        });
 
-      {/* Quick Stats Cards */}
-      <Grid container spacing={2} sx={{ mb: 2 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{
-            height: '100%',
-            backgroundColor: '#fafafa', // Light grey like BuJoGeek
-            border: '1px solid #e0e0e0'
+        // Handle today's summary
+        if (summaryData.status === 'fulfilled') {
+          setTodaySummary(summaryData.value);
+        }
+
+        // Handle weight stats
+        if (weightData.status === 'fulfilled' && weightData.value.success) {
+          setWeightStats(weightData.value.data);
+        }
+
+        // Handle blood pressure data
+        if (bpData.status === 'fulfilled' && bpData.value.success) {
+          const logs = bpData.value.data;
+          if (logs.length > 0) {
+            setLatestBP(logs[0]); // Most recent reading
+
+            // Calculate weekly average
+            const weekAgo = new Date();
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            const weeklyLogs = logs.filter(log => new Date(log.log_date) >= weekAgo);
+            if (weeklyLogs.length > 0) {
+              const avgSystolic = weeklyLogs.reduce((sum, log) => sum + log.systolic, 0) / weeklyLogs.length;
+              const avgDiastolic = weeklyLogs.reduce((sum, log) => sum + log.diastolic, 0) / weeklyLogs.length;
+              setWeeklyBP({ systolic: Math.round(avgSystolic), diastolic: Math.round(avgDiastolic) });
+            }
+          }
+        }
+
+        // Handle goals
+        console.log('Goals API call result:', goalsData);
+        if (goalsData.status === 'fulfilled' && goalsData.value && goalsData.value.success) {
+          console.log('Goals data loaded:', goalsData.value.data);
+          setGoals(goalsData.value.data);
+        } else {
+          console.log('Goals data failed to load:', goalsData);
+          console.log('Goals data status:', goalsData.status);
+          console.log('Goals data value:', goalsData.value);
+          if (goalsData.status === 'rejected') {
+            console.log('Goals data error:', goalsData.reason);
+          }
+        }
+
+        // Handle settings
+        if (settingsData.status === 'fulfilled' && settingsData.value.data) {
+          console.log('Settings data loaded:', settingsData.value.data);
+          setDashboardSettings(settingsData.value.data.dashboard || settingsService.getDefaultDashboardSettings());
+        } else {
+          console.log('Settings data failed to load:', settingsData);
+        }
+
+        // Mock login streak for now - replace with real API call later
+        setLoginStreak({ current: 7, longest: 15 });
+
+      } catch (error) {
+        console.error('Error loading dashboard data:', error);
+        setError('Failed to load dashboard data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDashboardData();
+  }, []);
+
+  // Helper functions
+  const renderCardByType = (cardType) => {
+    switch (cardType) {
+      case 'current_weight':
+        return dashboardSettings.show_current_weight && (
+          <Card key="weight-progress" sx={{
+            height: '200px',
+            backgroundColor: '#fafafa',
+            border: '1px solid #e0e0e0',
+            display: 'flex',
+            flexDirection: 'column'
           }}>
-            <CardContent sx={{ p: 1.5 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <Avatar sx={{ bgcolor: 'primary.main', mr: 1, width: 28, height: 28 }}>
+            <CardContent sx={{ p: 2, flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+                <Avatar sx={{ bgcolor: '#6098CC', mr: 1.5, width: 32, height: 32 }}>
+                  <WeightIcon fontSize="small" />
+                </Avatar>
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                  Weight Progress
+                </Typography>
+              </Box>
+
+              {weightStats ? (
+                <>
+                  {/* Current Weight */}
+                  <Typography variant="h5" component="div" sx={{ fontWeight: 600, mb: 1 }}>
+                    {weightStats.currentWeight ? `${weightStats.currentWeight.toFixed(1)} lbs` : 'N/A'}
+                  </Typography>
+
+                  {/* Weekly Progress */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    {getWeightChangeIcon(weightStats.weeklyChange)}
+                    <Typography
+                      variant="body2"
+                      color={getWeightChangeColor(weightStats.weeklyChange)}
+                      sx={{ ml: 0.5, fontWeight: 500 }}
+                    >
+                      {weightStats.weeklyChange ? `${weightStats.weeklyChange > 0 ? '+' : ''}${weightStats.weeklyChange.toFixed(1)} lbs this week` : 'No change'}
+                    </Typography>
+                  </Box>
+
+                  {/* Overall Progress */}
+                  {weightStats.totalChange && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                      <Typography
+                        variant="body2"
+                        color={getWeightChangeColor(weightStats.totalChange)}
+                        sx={{ fontWeight: 500 }}
+                      >
+                        {weightStats.totalChange > 0 ? '+' : ''}{weightStats.totalChange.toFixed(1)} lbs overall
+                      </Typography>
+                    </Box>
+                  )}
+
+                  {/* Progress Status */}
+                  <Box sx={{ mt: 'auto', pt: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Typography variant="caption" color="text.secondary">
+                      Progress Status
+                    </Typography>
+                    <Chip
+                      label={weightStats.weeklyChange > 0 ? 'Gaining' : weightStats.weeklyChange < 0 ? 'Losing' : 'Maintaining'}
+                      size="small"
+                      color={weightStats.weeklyChange > 0 ? 'error' : weightStats.weeklyChange < 0 ? 'success' : 'default'}
+                      sx={{ fontSize: '0.7rem' }}
+                    />
+                  </Box>
+                </>
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  No weight data
+                </Typography>
+              )}
+            </CardContent>
+          </Card>
+        );
+
+      case 'blood_pressure':
+        return dashboardSettings.show_blood_pressure && (
+          <Card key="blood-pressure" sx={{
+            height: '200px',
+            backgroundColor: '#fafafa',
+            border: '1px solid #e0e0e0',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            <CardContent sx={{ p: 2, flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+                <Avatar sx={{ bgcolor: '#f44336', mr: 1.5, width: 32, height: 32 }}>
+                  <BPIcon fontSize="small" />
+                </Avatar>
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                  Blood Pressure
+                </Typography>
+              </Box>
+
+              {latestBP ? (
+                <>
+                  <Typography variant="h5" component="div" sx={{ fontWeight: 600, mb: 1 }}>
+                    {latestBP.systolic}/{latestBP.diastolic}
+                  </Typography>
+
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    {getBPStatus(latestBP.systolic, latestBP.diastolic).icon}
+                    <Typography
+                      variant="body2"
+                      sx={{ ml: 0.5, fontWeight: 500 }}
+                      color={getBPStatus(latestBP.systolic, latestBP.diastolic).color}
+                    >
+                      {getBPStatus(latestBP.systolic, latestBP.diastolic).status}
+                    </Typography>
+                  </Box>
+
+                  {weeklyBP && (
+                    <Typography variant="caption" color="text.secondary">
+                      Weekly avg: {weeklyBP.systolic}/{weeklyBP.diastolic}
+                    </Typography>
+                  )}
+                </>
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  No BP readings
+                </Typography>
+              )}
+            </CardContent>
+          </Card>
+        );
+
+      case 'calories_today':
+        return dashboardSettings.show_calories_today && (
+          <Card key="calories" sx={{
+            height: '200px',
+            backgroundColor: '#fafafa',
+            border: '1px solid #e0e0e0',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            <CardContent sx={{ p: 2, flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+                <Avatar sx={{ bgcolor: '#4caf50', mr: 1.5, width: 32, height: 32 }}>
                   <FoodIcon fontSize="small" />
                 </Avatar>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
                   Calories Today
                 </Typography>
               </Box>
-              <Typography variant="h6" component="div" sx={{ fontWeight: 600, mb: 0.5 }}>
-                {mockData.todayCalories}
-              </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-                of {mockData.targetCalories} target
-              </Typography>
-              <LinearProgress
-                variant="determinate"
-                value={calorieProgress}
-                sx={{ height: 4, borderRadius: 2 }}
-              />
-            </CardContent>
-          </Card>
-        </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{
-            height: '100%',
-            backgroundColor: '#fafafa',
-            border: '1px solid #e0e0e0'
-          }}>
-            <CardContent sx={{ p: 1.5 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <Avatar sx={{ bgcolor: 'secondary.main', mr: 1, width: 28, height: 28 }}>
-                  <WeightIcon fontSize="small" />
-                </Avatar>
-                <Typography variant="body2" color="text.secondary">
-                  Current Weight
-                </Typography>
-              </Box>
-              <Typography variant="h6" component="div" sx={{ fontWeight: 600, mb: 0.5 }}>
-                {mockData.todayWeight} lbs
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <TrendingIcon
-                  sx={{
-                    color: mockData.weeklyChange < 0 ? 'success.main' : 'error.main',
-                    mr: 0.5,
-                    fontSize: 14
-                  }}
-                />
-                <Typography
-                  variant="caption"
-                  color={mockData.weeklyChange < 0 ? 'success.main' : 'error.main'}
-                >
-                  {mockData.weeklyChange > 0 ? '+' : ''}{mockData.weeklyChange} lbs this week
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
+              {todaySummary ? (
+                <>
+                  <Typography variant="h5" component="div" sx={{ fontWeight: 600, mb: 1 }}>
+                    {todaySummary.totals?.calories || 0}
+                  </Typography>
 
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{
-            height: '100%',
-            backgroundColor: '#fafafa',
-            border: '1px solid #e0e0e0'
-          }}>
-            <CardContent sx={{ p: 1.5 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <Avatar sx={{ bgcolor: 'success.main', mr: 1, width: 28, height: 28 }}>
-                  <GoalsIcon fontSize="small" />
-                </Avatar>
-                <Typography variant="body2" color="text.secondary">
-                  Active Goals
-                </Typography>
-              </Box>
-              <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
-                {mockData.goals.length}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                goals in progress
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{
-            height: '100%',
-            backgroundColor: '#fafafa',
-            border: '1px solid #e0e0e0'
-          }}>
-            <CardContent sx={{ p: 1.5 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <Avatar sx={{ bgcolor: 'info.main', mr: 1, width: 28, height: 28 }}>
-                  <TrendingIcon fontSize="small" />
-                </Avatar>
-                <Typography variant="body2" color="text.secondary">
-                  Streak
-                </Typography>
-              </Box>
-              <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
-                7 days
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                logging streak
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
-      {/* Bottom Row - Quick Actions, Today's Summary, and Goals */}
-      <Grid container spacing={2}>
-        <Grid item xs={12} md={4}>
-          <Card sx={{
-            backgroundColor: '#fafafa',
-            border: '1px solid #e0e0e0',
-            height: '100%'
-          }}>
-            <CardContent sx={{ p: 1.5 }}>
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 1 }}>
-                Quick Actions
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                <Button
-                  variant="contained"
-                  startIcon={<AddIcon />}
-                  size="small"
-                >
-                  Log Food
-                </Button>
-                <Button
-                  variant="outlined"
-                  startIcon={<WeightIcon />}
-                  size="small"
-                >
-                  Log Weight
-                </Button>
-                <Button
-                  variant="outlined"
-                  startIcon={<GoalsIcon />}
-                  size="small"
-                >
-                  Set Goal
-                </Button>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} md={4}>
-          <Card sx={{
-            backgroundColor: '#fafafa',
-            border: '1px solid #e0e0e0',
-            height: '100%'
-          }}>
-            <CardContent sx={{ p: 1.5 }}>
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 1 }}>
-                Today's Summary
-              </Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="body2">Protein</Typography>
-                  <Typography variant="body2" fontWeight={600}>85g / 120g</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="body2">Carbs</Typography>
-                  <Typography variant="body2" fontWeight={600}>150g / 200g</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="body2">Fat</Typography>
-                  <Typography variant="body2" fontWeight={600}>45g / 65g</Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} md={4}>
-          <Card sx={{
-            backgroundColor: '#fafafa',
-            border: '1px solid #e0e0e0',
-            height: '100%'
-          }}>
-            <CardContent sx={{ p: 1.5 }}>
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 1 }}>
-                Goal Progress
-              </Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                {mockData.goals.map((goal, index) => (
-                  <Box
-                    key={index}
-                    sx={{
-                      p: 1.5,
-                      backgroundColor: '#ffffff',
-                      borderRadius: 1,
-                      border: '1px solid #e0e0e0',
-                      position: 'relative',
-                      '&:hover': {
-                        backgroundColor: '#f5f5f5',
-                      }
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-                      <Typography variant="body2" fontWeight={500}>
-                        {goal.name}
+                  {(() => {
+                    console.log('Calories Today - checking goals:', {
+                      goals_nutrition: goals?.nutrition,
+                      goals_calories: goals?.nutrition?.goals?.calories,
+                      todaySummary_calories: todaySummary.totals?.calories
+                    });
+                    return goals?.nutrition?.goals?.calories;
+                  })() ? (
+                    <>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                        of {goals.nutrition.goals.calories} target
                       </Typography>
-                      <Chip
-                        label={`${goal.progress}%`}
-                        size="small"
-                        color="primary"
-                        sx={{ fontSize: '0.625rem' }}
+                      <LinearProgress
+                        variant="determinate"
+                        value={Math.min(((todaySummary.totals?.calories || 0) / goals.nutrition.goals.calories) * 100, 100)}
+                        sx={{ height: 6, borderRadius: 3, mb: 1 }}
+                      />
+
+                      {/* Weekly Progress */}
+                      <Box sx={{ mt: 'auto', pt: 1 }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                          Weekly Progress
+                        </Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                          Week: {todaySummary.totals?.calories || 0} of {goals.nutrition.goals.calories * 7} target
+                        </Typography>
+                      </Box>
+                    </>
+                  ) : (
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 'auto', pt: 1 }}>
+                      No calorie goal set
+                    </Typography>
+                  )}
+                </>
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  No data today
+                </Typography>
+              )}
+            </CardContent>
+          </Card>
+        );
+
+      case 'login_streak':
+        return dashboardSettings.show_login_streak && (
+          <Card key="login-streak" sx={{
+            height: '200px',
+            backgroundColor: '#fafafa',
+            border: '1px solid #e0e0e0',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            <CardContent sx={{ p: 2, flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+                <Avatar sx={{ bgcolor: '#ff9800', mr: 1.5, width: 32, height: 32 }}>
+                  <StreakIcon fontSize="small" />
+                </Avatar>
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                  Login Streak
+                </Typography>
+              </Box>
+
+              <Typography variant="h5" component="div" sx={{ fontWeight: 600, mb: 1 }}>
+                {loginStreak.current} days
+              </Typography>
+
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, flex: 1 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="body2" color="text.secondary">Current</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                    {loginStreak.current} days
+                  </Typography>
+                </Box>
+
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="body2" color="text.secondary">Longest</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                    {loginStreak.longest} days
+                  </Typography>
+                </Box>
+              </Box>
+
+              <Box sx={{ mt: 'auto', pt: 1 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
+                  {loginStreak.current > 0 ? 'Keep it up! 🔥' : 'Start your streak today!'}
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
+        );
+
+      case 'nutrition_today':
+        return dashboardSettings.show_nutrition_today && (
+          <Card key="nutrition" sx={{
+            height: '200px',
+            backgroundColor: '#fafafa',
+            border: '1px solid #e0e0e0',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            <CardContent sx={{ p: 2, flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+                <Avatar sx={{ bgcolor: '#9c27b0', mr: 1.5, width: 32, height: 32 }}>
+                  <NutritionIcon fontSize="small" />
+                </Avatar>
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                  Nutrition Today
+                </Typography>
+              </Box>
+
+              {todaySummary ? (
+                <Grid container spacing={2} sx={{ flex: 1 }}>
+                  <Grid item xs={12} sm={4}>
+                    <Box sx={{ textAlign: 'center', p: 1 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 600, color: '#4caf50' }}>
+                        {todaySummary.totals?.protein_grams || 0}g
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Protein
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Goal: {goals?.nutrition?.goals?.protein || 'Not set'}g
+                      </Typography>
+                      <LinearProgress
+                        variant="determinate"
+                        value={goals?.nutrition?.goals?.protein ? Math.min(((todaySummary.totals?.protein_grams || 0) / goals.nutrition.goals.protein) * 100, 100) : 0}
+                        sx={{ height: 4, borderRadius: 2, mt: 1 }}
+                        color="success"
                       />
                     </Box>
-                    <LinearProgress
-                      variant="determinate"
-                      value={goal.progress}
-                      sx={{ height: 3, borderRadius: 1.5, mb: 0.5 }}
-                    />
-                    <Typography variant="caption" color="text.secondary">
-                      Target: {goal.target}
-                    </Typography>
-                    {/* Priority indicator bar */}
-                    <Box
-                      sx={{
-                        position: 'absolute',
-                        right: 0,
-                        top: 0,
-                        bottom: 0,
-                        width: 3,
-                        backgroundColor: getPriorityColor(goal.priority),
-                        borderTopRightRadius: 2,
-                        borderBottomRightRadius: 2,
-                      }}
-                    />
-                  </Box>
-                ))}
+                  </Grid>
+
+                  <Grid item xs={12} sm={4}>
+                    <Box sx={{ textAlign: 'center', p: 1 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 600, color: '#2196f3' }}>
+                        {todaySummary.totals?.carbs_grams || 0}g
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Carbs
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Goal: {goals?.nutrition?.goals?.carbs || 'Not set'}g
+                      </Typography>
+                      <LinearProgress
+                        variant="determinate"
+                        value={goals?.nutrition?.goals?.carbs ? Math.min(((todaySummary.totals?.carbs_grams || 0) / goals.nutrition.goals.carbs) * 100, 100) : 0}
+                        sx={{ height: 4, borderRadius: 2, mt: 1 }}
+                        color="info"
+                      />
+                    </Box>
+                  </Grid>
+
+                  <Grid item xs={12} sm={4}>
+                    <Box sx={{ textAlign: 'center', p: 1 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 600, color: '#ff9800' }}>
+                        {todaySummary.totals?.fat_grams || 0}g
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Fat
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Goal: {goals?.nutrition?.goals?.fat || 'Not set'}g
+                      </Typography>
+                      <LinearProgress
+                        variant="determinate"
+                        value={goals?.nutrition?.goals?.fat ? Math.min(((todaySummary.totals?.fat_grams || 0) / goals.nutrition.goals.fat) * 100, 100) : 0}
+                        sx={{ height: 4, borderRadius: 2, mt: 1 }}
+                        color="warning"
+                      />
+                    </Box>
+                  </Grid>
+                </Grid>
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  No nutrition data available
+                </Typography>
+              )}
+            </CardContent>
+          </Card>
+        );
+
+      case 'quick_actions':
+        return dashboardSettings.show_quick_actions && (
+          <Card key="quick-actions" sx={{
+            backgroundColor: '#fafafa',
+            border: '1px solid #e0e0e0',
+            height: '200px',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            <CardContent sx={{ p: 2, flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
+                Quick Actions
+              </Typography>
+
+              <Box sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 2,
+                flex: 1,
+                justifyContent: 'center',
+                alignItems: 'center'
+              }}>
+                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
+                  <IconButton
+                    onClick={() => handleQuickAction('food')}
+                    sx={{
+                      width: 60,
+                      height: 60,
+                      backgroundColor: '#4caf50',
+                      color: 'white',
+                      '&:hover': {
+                        backgroundColor: '#388e3c',
+                        transform: 'scale(1.1)'
+                      },
+                      transition: 'all 0.2s ease-in-out'
+                    }}
+                  >
+                    <AddIcon fontSize="large" />
+                  </IconButton>
+
+                  <IconButton
+                    onClick={() => handleQuickAction('weight')}
+                    sx={{
+                      width: 60,
+                      height: 60,
+                      backgroundColor: '#6098CC',
+                      color: 'white',
+                      '&:hover': {
+                        backgroundColor: '#4a7ba8',
+                        transform: 'scale(1.1)'
+                      },
+                      transition: 'all 0.2s ease-in-out'
+                    }}
+                  >
+                    <WeightIcon fontSize="large" />
+                  </IconButton>
+
+                  <IconButton
+                    onClick={() => handleQuickAction('bp')}
+                    sx={{
+                      width: 60,
+                      height: 60,
+                      backgroundColor: '#f44336',
+                      color: 'white',
+                      '&:hover': {
+                        backgroundColor: '#d32f2f',
+                        transform: 'scale(1.1)'
+                      },
+                      transition: 'all 0.2s ease-in-out'
+                    }}
+                  >
+                    <BPIcon fontSize="large" />
+                  </IconButton>
+                </Box>
+
+                <Box sx={{ textAlign: 'center', mt: 1 }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                    Quick Log
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Food • Weight • BP
+                  </Typography>
+                </Box>
               </Box>
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
+        );
+
+      case 'weight_goal':
+        console.log('Rendering weight goal card:', {
+          show_weight_goal: dashboardSettings.show_weight_goal,
+          goals_weight: goals?.weight,
+          goals: goals
+        });
+        return dashboardSettings.show_weight_goal && goals?.weight && (
+          <Card key="weight-goal" sx={{
+            height: '200px',
+            backgroundColor: '#fafafa',
+            border: '1px solid #e0e0e0',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            <CardContent sx={{ p: 2, flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+                <Avatar sx={{ bgcolor: '#6098CC', mr: 1.5, width: 32, height: 32 }}>
+                  <WeightIcon fontSize="small" />
+                </Avatar>
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                  Weight Goal
+                </Typography>
+              </Box>
+
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+                {goals.weight.startWeight} → {goals.weight.targetWeight} lbs
+              </Typography>
+
+              {weightStats && weightStats.currentWeight && (
+                <>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    Current: {weightStats.currentWeight.toFixed(1)} lbs
+                  </Typography>
+
+                  <LinearProgress
+                    variant="determinate"
+                    value={Math.min(Math.max(((goals.weight.startWeight - weightStats.currentWeight) / (goals.weight.startWeight - goals.weight.targetWeight)) * 100, 0), 100)}
+                    sx={{ height: 6, borderRadius: 3, mb: 1 }}
+                  />
+
+                  <Box sx={{ mt: 'auto', pt: 1 }}>
+                    <Chip
+                      label={`${Math.round(((goals.weight.startWeight - weightStats.currentWeight) / (goals.weight.startWeight - goals.weight.targetWeight)) * 100)}% Complete`}
+                      size="small"
+                      color="primary"
+                      sx={{ fontSize: '0.7rem' }}
+                    />
+                  </Box>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        );
+
+      case 'nutrition_goal':
+        console.log('Rendering nutrition goal card:', {
+          show_nutrition_goal: dashboardSettings.show_nutrition_goal,
+          goals_nutrition: goals?.nutrition,
+          goals: goals
+        });
+        return dashboardSettings.show_nutrition_goal && goals?.nutrition && (
+          <Card key="nutrition-goal" sx={{
+            height: '200px',
+            backgroundColor: '#fafafa',
+            border: '1px solid #e0e0e0',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            <CardContent sx={{ p: 2, flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+                <Avatar sx={{ bgcolor: '#4caf50', mr: 1.5, width: 32, height: 32 }}>
+                  <FoodIcon fontSize="small" />
+                </Avatar>
+                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                  Nutrition Goals
+                </Typography>
+              </Box>
+
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+                Daily Targets
+              </Typography>
+
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, flex: 1 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="body2" color="text.secondary">Calories</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                    {goals.nutrition.goals?.calories || 0}
+                  </Typography>
+                </Box>
+
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="body2" color="text.secondary">Protein</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                    {goals.nutrition.goals?.protein || 0}g
+                  </Typography>
+                </Box>
+
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="body2" color="text.secondary">Carbs</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                    {goals.nutrition.goals?.carbs || 0}g
+                  </Typography>
+                </Box>
+
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="body2" color="text.secondary">Fat</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                    {goals.nutrition.goals?.fat || 0}g
+                  </Typography>
+                </Box>
+              </Box>
+
+              <Box sx={{ mt: 'auto', pt: 1 }}>
+                <Typography variant="caption" color="text.secondary">
+                  Daily nutrition targets set
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  const getBPStatus = (systolic, diastolic) => {
+    if (systolic < 120 && diastolic < 80) return { status: 'Normal', color: '#4caf50', icon: <CheckIcon /> };
+    if (systolic < 130 && diastolic < 80) return { status: 'Elevated', color: '#ff9800', icon: <WarningIcon /> };
+    if (systolic >= 130 || diastolic >= 80) return { status: 'High', color: '#f44336', icon: <ErrorIcon /> };
+    return { status: 'Unknown', color: '#666', icon: <InfoIcon /> };
+  };
+
+  const getWeightChangeColor = (change) => {
+    if (change > 0) return '#f44336';
+    if (change < 0) return '#4caf50';
+    return '#666';
+  };
+
+  const getWeightChangeIcon = (change) => {
+    if (change > 0) return <TrendingUpIcon sx={{ color: '#f44336' }} />;
+    if (change < 0) return <TrendingDownIcon sx={{ color: '#4caf50' }} />;
+    return <TrendingIcon sx={{ color: '#666' }} />;
+  };
+
+  const handleQuickAction = (action) => {
+    switch (action) {
+      case 'food':
+        navigate('/food');
+        break;
+      case 'weight':
+        navigate('/weight');
+        break;
+      case 'bp':
+        navigate('/blood-pressure');
+        break;
+      default:
+        break;
+    }
+  };
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  // Debug logging
+  console.log('Dashboard - goals:', goals);
+  console.log('Dashboard - dashboardSettings:', dashboardSettings);
+  console.log('Dashboard - todaySummary:', todaySummary);
+
+  return (
+    <Box sx={{ p: 3 }}>
+      <Typography variant="h4" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
+        Dashboard
+      </Typography>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+
+      {/* Dashboard Cards - Ordered Layout */}
+      <Box sx={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+        gap: 2,
+        mb: 3
+      }}>
+        {dashboardSettings.card_order?.map((cardType) => renderCardByType(cardType))}
+      </Box>
     </Box>
   );
 };

@@ -78,8 +78,7 @@ const foodItemSchema = new mongoose.Schema({
     index: true
   },
   user_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    type: String,
     index: true
   },
   is_deleted: {

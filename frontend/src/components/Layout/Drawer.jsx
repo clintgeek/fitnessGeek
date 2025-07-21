@@ -14,6 +14,7 @@ import {
   Person as ProfileIcon,
   Restaurant as FoodSearchIcon,
   Restaurant as FoodIcon,
+  LocalDining as MyFoodsIcon,
   Flag as GoalsIcon,
   Logout as LogoutIcon
 } from '@mui/icons-material';
@@ -42,16 +43,22 @@ const AppDrawer = ({ open, onClose }) => {
       description: 'Set nutrition and weight goals'
     },
     {
-      text: 'Profile & Settings',
-      icon: <ProfileIcon />,
-      path: '/profile',
-      description: 'Manage your account and preferences'
+      text: 'My Foods',
+      icon: <MyFoodsIcon />,
+      path: '/my-foods',
+      description: 'Manage your saved foods'
     },
     {
       text: 'Food Search',
       icon: <FoodSearchIcon />,
       path: '/food-search',
       description: 'Search and manage food database'
+    },
+    {
+      text: 'Profile & Settings',
+      icon: <ProfileIcon />,
+      path: '/profile',
+      description: 'Manage your account and preferences'
     }
   ];
 

@@ -10,6 +10,7 @@ import ProgressTracker from '../components/Weight/ProgressTracker.jsx';
 import QuickAddWeight from '../components/Weight/QuickAddWeight.jsx';
 import WeightLogList from '../components/Weight/WeightLogList.jsx';
 import { weightService } from '../services/weightService';
+import { goalsService } from '../services/goalsService';
 
 const Weight = () => {
   const [weightLogs, setWeightLogs] = useState([]);
@@ -34,11 +35,16 @@ const Weight = () => {
         setError('Failed to load weight logs');
       }
 
-      // Load goals from localStorage (from Goals page)
-      const savedGoals = localStorage.getItem('fitnessGeek_weightGoal');
-      const goals = savedGoals ? JSON.parse(savedGoals) : null;
-
-      setWeightGoal(goals);
+      // Load goals from backend
+      try {
+        const goalsResponse = await goalsService.getGoals();
+        if (goalsResponse && goalsResponse.weight) {
+          setWeightGoal(goalsResponse.weight);
+        }
+      } catch (goalsError) {
+        console.error('Error loading goals:', goalsError);
+        // Don't set error for goals failure, just log it
+      }
     } catch (error) {
       setError('Failed to load weight data');
       console.error('Error loading weight data:', error);
@@ -89,7 +95,7 @@ const Weight = () => {
   const getCurrentWeight = () => {
     if (weightLogs.length === 0) {
       // If no logs exist, use start weight from goals
-      return weightGoal && weightGoal.enabled ? weightGoal.startWeight : null;
+      return weightGoal && weightGoal.is_active ? weightGoal.startWeight : null;
     }
     const sortedLogs = [...weightLogs].sort((a, b) => new Date(b.log_date) - new Date(a.log_date));
     return sortedLogs[0].weight_value;
@@ -105,6 +111,8 @@ const Weight = () => {
 
   const currentWeight = getCurrentWeight();
 
+
+
   return (
     <Box sx={{ p: 2, pb: 8 }}> {/* Consistent padding with FoodLog, extra bottom padding for FAB */}
       <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 600, color: '#6098CC' }}>
@@ -116,7 +124,7 @@ const Weight = () => {
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
       {/* Progress Tracker - only show if weight goal is set */}
-      {weightGoal && weightGoal.enabled && currentWeight && weightGoal.startWeight && weightGoal.targetWeight && (
+      {weightGoal && weightGoal.is_active && currentWeight && weightGoal.startWeight && weightGoal.targetWeight && (
         <ProgressTracker
           startValue={weightGoal.startWeight}
           currentValue={currentWeight}
@@ -130,18 +138,14 @@ const Weight = () => {
 
       {/* Weight Chart */}
       {weightLogs.length > 0 && (
-        <>
-          {console.log('Weight page - weightLogs:', weightLogs)}
-          {console.log('Weight page - weightGoal:', weightGoal)}
-                  <WeightChart
+        <WeightChart
           data={weightLogs}
           title="Weight Trend"
           yAxisLabel="Weight (lbs)"
-          goalLine={weightGoal && weightGoal.enabled}
+          goalLine={Boolean(weightGoal && weightGoal.is_active)}
           startWeight={weightGoal?.startWeight}
           targetWeight={weightGoal?.targetWeight}
         />
-        </>
       )}
 
       {/* Quick Add Weight */}

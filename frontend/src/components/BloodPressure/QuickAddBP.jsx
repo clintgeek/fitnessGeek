@@ -14,13 +14,14 @@ import {
   Add as AddIcon,
   MonitorHeart as BPIcon
 } from '@mui/icons-material';
+import { getTodayLocal } from '../../utils/dateUtils.js';
 
-const QuickAddBP = ({ onAdd, unit = "mmHg" }) => {
+const QuickAddBP = ({ onAdd, unit = "mmHg", existingTodayBP = null }) => {
   const theme = useTheme();
   const [systolic, setSystolic] = useState('');
   const [diastolic, setDiastolic] = useState('');
   const [pulse, setPulse] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(getTodayLocal());
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -76,9 +77,7 @@ const QuickAddBP = ({ onAdd, unit = "mmHg" }) => {
       setSystolic('');
       setDiastolic('');
       setPulse('');
-      setDate(new Date().toISOString().split('T')[0]);
-    } catch {
-      setError('Failed to add blood pressure reading');
+      setDate(getTodayLocal());
     } finally {
       setLoading(false);
     }
@@ -139,6 +138,24 @@ const QuickAddBP = ({ onAdd, unit = "mmHg" }) => {
               Quick Add Blood Pressure
             </Typography>
           </Box>
+
+          {existingTodayBP && (
+            <Box sx={{
+              backgroundColor: 'rgba(255, 255, 255, 0.9)',
+              borderRadius: 1,
+              p: 1.5,
+              mb: 2,
+              border: '1px solid rgba(255, 255, 255, 0.3)'
+            }}>
+              <Typography variant="body2" sx={{ color: '#666', fontWeight: 500 }}>
+                📝 You already have a reading for today: <strong>{existingTodayBP.systolic}/{existingTodayBP.diastolic}</strong>
+                {existingTodayBP.pulse && ` (pulse: ${existingTodayBP.pulse})`}
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#888' }}>
+                Adding a new reading will replace the existing one.
+              </Typography>
+            </Box>
+          )}
 
           <form onSubmit={handleSubmit}>
             <Grid container spacing={2} alignItems="center">

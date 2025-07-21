@@ -7,6 +7,36 @@ const logger = require('../config/logger');
 // Apply authentication to all routes
 router.use(authenticateToken);
 
+// GET /api/summary/today - Get today's summary
+router.get('/today', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const today = new Date().toISOString().split('T')[0];
+
+    const summary = await DailySummary.getOrCreate(userId, today);
+
+    logger.info('Today\'s summary retrieved', {
+      userId,
+      hasData: summary.totals.calories > 0
+    });
+
+    res.json({
+      success: true,
+      data: summary
+    });
+
+  } catch (error) {
+    logger.error('Error getting today\'s summary:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        message: 'Failed to retrieve today\'s summary',
+        code: 'SUMMARY_RETRIEVAL_ERROR'
+      }
+    });
+  }
+});
+
 // GET /api/summary/:date - Get daily summary for specific date
 router.get('/:date', async (req, res) => {
   try {
@@ -97,36 +127,6 @@ router.post('/:date/refresh', async (req, res) => {
       error: {
         message: 'Failed to refresh daily summary',
         code: 'SUMMARY_REFRESH_ERROR'
-      }
-    });
-  }
-});
-
-// GET /api/summary/today - Get today's summary
-router.get('/today', async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const today = new Date().toISOString().split('T')[0];
-
-    const summary = await DailySummary.getOrCreate(userId, today);
-
-    logger.info('Today\'s summary retrieved', {
-      userId,
-      hasData: summary.totals.calories > 0
-    });
-
-    res.json({
-      success: true,
-      data: summary
-    });
-
-  } catch (error) {
-    logger.error('Error getting today\'s summary:', error);
-    res.status(500).json({
-      success: false,
-      error: {
-        message: 'Failed to retrieve today\'s summary',
-        code: 'SUMMARY_RETRIEVAL_ERROR'
       }
     });
   }

@@ -9,6 +9,7 @@ import BPChart from '../components/BloodPressure/BPChart.jsx';
 import QuickAddBP from '../components/BloodPressure/QuickAddBP.jsx';
 import BPLogList from '../components/BloodPressure/BPLogList.jsx';
 import { bpService } from '../services/bpService.js';
+import { getTodayLocal, formatDateLocal } from '../utils/dateUtils.js';
 
 const BloodPressure = () => {
   const [bpLogs, setBPLogs] = useState([]);
@@ -56,7 +57,17 @@ const BloodPressure = () => {
         setError(response.message || 'Failed to add blood pressure reading');
       }
     } catch (error) {
-      setError('Failed to add blood pressure reading');
+      // Handle specific error cases
+      if (error.message && error.message.includes('already exists for this date')) {
+        const todayBP = getTodayBP();
+        if (todayBP) {
+          setError(`You already have a blood pressure reading for today (${todayBP.systolic}/${todayBP.diastolic}${todayBP.pulse ? `, pulse: ${todayBP.pulse}` : ''}). You can update the existing entry or delete it first.`);
+        } else {
+          setError('You already have a blood pressure reading for today. You can update the existing entry or delete it first.');
+        }
+      } else {
+        setError('Failed to add blood pressure reading');
+      }
       console.error('Error adding BP reading:', error);
     }
   };
@@ -87,6 +98,16 @@ const BloodPressure = () => {
     return sortedLogs[0];
   };
 
+  const getTodayBP = () => {
+    const today = getTodayLocal();
+    return bpLogs.find(log => {
+      // Convert the stored UTC date to local date for comparison
+      const logDate = new Date(log.log_date);
+      const logDateLocal = formatDateLocal(logDate);
+      return logDateLocal === today;
+    });
+  };
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
@@ -96,6 +117,7 @@ const BloodPressure = () => {
   }
 
   const currentBP = getCurrentBP();
+  const todayBP = getTodayBP();
 
   return (
     <Box sx={{ p: 2, pb: 8 }}> {/* Consistent padding with other pages, extra bottom padding for FAB */}
@@ -153,7 +175,7 @@ const BloodPressure = () => {
       )}
 
       {/* Quick Add BP */}
-      <QuickAddBP onAdd={handleAddBP} unit="mmHg" />
+      <QuickAddBP onAdd={handleAddBP} unit="mmHg" existingTodayBP={todayBP} />
 
       {/* BP Log List */}
       <BPLogList

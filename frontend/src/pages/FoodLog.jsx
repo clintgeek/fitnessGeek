@@ -114,7 +114,17 @@ const FoodLog = () => {
   const calculateNutritionSummary = () => {
     return logs.reduce(
       (summary, log) => {
-        // Handle both food_item and food_item_id structures
+        // Use the calculatedNutrition virtual property if available, otherwise fall back to manual calculation
+        if (log.calculatedNutrition) {
+          return {
+            calories: summary.calories + (log.calculatedNutrition.calories || 0),
+            protein: summary.protein + (log.calculatedNutrition.protein_grams || 0),
+            carbs: summary.carbs + (log.calculatedNutrition.carbs_grams || 0),
+            fat: summary.fat + (log.calculatedNutrition.fat_grams || 0)
+          };
+        }
+
+        // Fallback: Handle both food_item and food_item_id structures
         const food_item = log.food_item || log.food_item_id;
         const { servings } = log;
 
@@ -151,23 +161,12 @@ const FoodLog = () => {
     try {
       // Add the food to the selected meal type
       const logData = {
-        food_item: {
-          name: food.name,
-          brand: food.brand,
-          calories_per_serving: food.nutrition?.calories_per_serving || 0,
-          protein_grams: food.nutrition?.protein_grams || 0,
-          carbs_grams: food.nutrition?.carbs_grams || 0,
-          fat_grams: food.nutrition?.fat_grams || 0,
-          serving_size: food.serving?.size || 100,
-          serving_unit: food.serving?.unit || 'g',
-          source: food.source || 'custom',
-          source_id: food.source_id || `${food.source}-${food._id}`,
-          barcode: food.barcode
-        },
+        food_item: food,
         log_date: selectedDate,
         meal_type: selectedMealType,
         servings: food.servings || 1,
-        notes: food.notes || ''
+        notes: food.notes || '',
+        nutrition: food.nutrition || food.original_nutrition || {}
       };
 
       await fitnessGeekService.addFoodToLog(logData);

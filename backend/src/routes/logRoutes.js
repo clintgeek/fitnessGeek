@@ -103,7 +103,8 @@ router.post('/', async (req, res) => {
       log_date,
       meal_type,
       servings,
-      notes
+      notes,
+      nutrition
     } = req.body;
 
     // Validate required fields
@@ -155,7 +156,8 @@ router.post('/', async (req, res) => {
       log_date: new Date(log_date),
       meal_type,
       servings: parseFloat(servings),
-      notes: notes || ''
+      notes: notes || '',
+      nutrition: nutrition || foodItem.nutrition || {}
     });
 
     const savedLog = await log.save();

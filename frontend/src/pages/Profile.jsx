@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -29,9 +29,19 @@ import {
   Security as SecurityIcon,
   Notifications as NotificationsIcon,
   Logout as LogoutIcon,
-  Edit as EditIcon
+  Edit as EditIcon,
+  Dashboard as DashboardIcon,
+  MonitorWeight as WeightIcon,
+  MonitorHeart as BPIcon,
+  LocalDining as FoodIcon,
+  TrendingUp as StreakIcon,
+  Restaurant as NutritionIcon,
+  FlashOn as QuickActionsIcon,
+  Flag as GoalsIcon
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth.js';
+import { settingsService } from '../services/settingsService.js';
+import DashboardOrderSettings from '../components/DashboardOrderSettings.jsx';
 
 const Profile = () => {
   const { user, logout } = useAuth();
@@ -44,19 +54,84 @@ const Profile = () => {
     emailUpdates: true,
     darkMode: false
   });
+  const [dashboardSettings, setDashboardSettings] = useState({
+    show_current_weight: true,
+    show_blood_pressure: true,
+    show_calories_today: true,
+    show_login_streak: true,
+    show_nutrition_today: true,
+    show_quick_actions: true,
+    show_weight_goal: true,
+    show_nutrition_goal: true,
+    card_order: [
+      'current_weight',
+      'blood_pressure',
+      'calories_today',
+      'login_streak',
+      'nutrition_today',
+      'quick_actions',
+      'weight_goal',
+      'nutrition_goal'
+    ]
+  });
+  const [loadingSettings, setLoadingSettings] = useState(false);
   const [editData, setEditData] = useState({
     username: user?.username || user?.name || '',
     email: user?.email || ''
   });
 
+  // Load settings on component mount
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    try {
+      setLoadingSettings(true);
+      const response = await settingsService.getSettings();
+      if (response.data && response.data.dashboard) {
+        setDashboardSettings(response.data.dashboard);
+      }
+    } catch (error) {
+      console.error('Error loading settings:', error);
+      // Use default settings if loading fails
+    } finally {
+      setLoadingSettings(false);
+    }
+  };
+
+  const handleDashboardSettingChange = (setting, value) => {
+    setDashboardSettings(prev => ({
+      ...prev,
+      [setting]: value
+    }));
+  };
+
+  const handleDashboardOrderChange = (newOrder) => {
+    setDashboardSettings(prev => ({
+      ...prev,
+      card_order: newOrder
+    }));
+  };
+
   const handleLogout = () => {
     logout();
   };
 
-  const handleSaveSettings = () => {
-    // TODO: Save settings to backend
-    setSuccess('Settings saved successfully!');
-    setTimeout(() => setSuccess(''), 3000);
+  const handleSaveSettings = async () => {
+    setLoadingSettings(true);
+    try {
+      // Save dashboard settings
+      await settingsService.updateDashboardSettings(dashboardSettings);
+      setSuccess('Dashboard settings saved successfully!');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (error) {
+      console.error('Error saving dashboard settings:', error);
+      setError('Failed to save dashboard settings');
+      setTimeout(() => setError(''), 3000);
+    } finally {
+      setLoadingSettings(false);
+    }
   };
 
   const handleSaveProfile = async () => {
@@ -85,7 +160,7 @@ const Profile = () => {
 
       <Grid container spacing={3}>
         {/* Profile Card */}
-        <Grid item xs={12} md={4}>
+        <Grid xs={12} md={4}>
           <Card>
             <CardContent sx={{ textAlign: 'center' }}>
               <Avatar
@@ -124,7 +199,7 @@ const Profile = () => {
         </Grid>
 
         {/* Settings */}
-        <Grid item xs={12} md={8}>
+        <Grid xs={12} md={8}>
           <Card>
             <CardContent>
               <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
@@ -201,6 +276,36 @@ const Profile = () => {
             </CardContent>
           </Card>
 
+          {/* Dashboard Configuration */}
+          <Card sx={{ mt: 2 }}>
+            <CardContent>
+              <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
+                <DashboardIcon sx={{ mr: 1 }} />
+                Dashboard Configuration
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Choose which components to show on your dashboard and drag to reorder them
+              </Typography>
+
+              <DashboardOrderSettings
+                settings={dashboardSettings}
+                onSettingsChange={handleDashboardSettingChange}
+                onOrderChange={handleDashboardOrderChange}
+              />
+
+              <Box sx={{ mt: 2 }}>
+                <Button
+                  variant="contained"
+                  onClick={handleSaveSettings}
+                  disabled={loadingSettings}
+                  sx={{ mr: 1 }}
+                >
+                  {loadingSettings ? 'Saving...' : 'Save Dashboard Settings'}
+                </Button>
+              </Box>
+            </CardContent>
+          </Card>
+
           {/* Account Actions */}
           <Card sx={{ mt: 2 }}>
             <CardContent>
@@ -210,7 +315,7 @@ const Profile = () => {
               </Typography>
 
               <List>
-                <ListItem button>
+                <ListItem>
                   <ListItemIcon>
                     <SecurityIcon />
                   </ListItemIcon>
@@ -222,7 +327,7 @@ const Profile = () => {
 
                 <Divider />
 
-                <ListItem button>
+                <ListItem>
                   <ListItemIcon>
                     <PersonIcon />
                   </ListItemIcon>
@@ -234,7 +339,7 @@ const Profile = () => {
 
                 <Divider />
 
-                <ListItem button onClick={handleLogout}>
+                <ListItem onClick={handleLogout}>
                   <ListItemIcon>
                     <LogoutIcon />
                   </ListItemIcon>

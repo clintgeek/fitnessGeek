@@ -38,7 +38,8 @@ router.get('/', authenticateToken, async (req, res) => {
         startWeight: weightGoals.startWeight,
         targetWeight: weightGoals.targetWeight,
         startDate: weightGoals.startDate ? weightGoals.startDate.toISOString().split('T')[0] : null,
-        goalDate: weightGoals.goalDate ? weightGoals.goalDate.toISOString().split('T')[0] : null
+        goalDate: weightGoals.goalDate ? weightGoals.goalDate.toISOString().split('T')[0] : null,
+        is_active: weightGoals.is_active
       } : null
     };
 

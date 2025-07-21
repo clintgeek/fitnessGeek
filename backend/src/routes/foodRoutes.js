@@ -274,7 +274,7 @@ router.put('/:id', async (req, res) => {
     const userId = req.user.id;
     const updateData = req.body;
 
-    // Only allow users to update their own custom foods
+    // Allow users to edit any food they've saved locally (custom or API-sourced)
     const food = await FoodItem.findOne({
       _id: id,
       user_id: userId,
@@ -331,7 +331,7 @@ router.delete('/:id', async (req, res) => {
     const { id } = req.params;
     const userId = req.user.id;
 
-    // Only allow users to delete their own custom foods
+    // Allow users to delete any food they've saved locally (custom or API-sourced)
     const food = await FoodItem.findOne({
       _id: id,
       user_id: userId,

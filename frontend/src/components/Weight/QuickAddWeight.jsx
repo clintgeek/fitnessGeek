@@ -17,11 +17,12 @@ import {
   Add as AddIcon,
   MonitorWeight as WeightIcon
 } from '@mui/icons-material';
+import { getTodayLocal } from '../../utils/dateUtils.js';
 
 const QuickAddWeight = ({ onAdd, unit = 'lbs' }) => {
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(getTodayLocal());
   const [loading, setLoading] = useState(false);
   const theme = useTheme();
 
@@ -36,7 +37,7 @@ const QuickAddWeight = ({ onAdd, unit = 'lbs' }) => {
       });
 
       setValue('');
-      setDate(new Date().toISOString().split('T')[0]);
+      setDate(getTodayLocal());
       setOpen(false);
     } catch (error) {
       console.error('Error adding weight:', error);

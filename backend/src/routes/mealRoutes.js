@@ -363,7 +363,8 @@ router.post('/:id/add-to-log', async (req, res) => {
         log_date: new Date(log_date),
         meal_type: meal_type,
         servings: item.servings,
-        notes: `Added from meal: ${meal.name}`
+        notes: `Added from meal: ${meal.name}`,
+        nutrition: item.food_item_id.nutrition || {}
       });
 
       const savedLog = await log.save();
