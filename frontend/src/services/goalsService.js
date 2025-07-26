@@ -17,8 +17,10 @@ export const goalsService = {
   // Save user goals
   async saveGoals(goals) {
     try {
+      console.log('GoalsService: Saving goals:', goals);
       const response = await apiService.post('/goals', goals);
-      return response.data;
+      console.log('GoalsService: Save response:', response);
+      return response;
     } catch (error) {
       console.error('Error saving goals:', error);
       throw error;

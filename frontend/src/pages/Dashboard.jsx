@@ -1,19 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box,
-  Grid,
   Card,
   CardContent,
   Typography,
-  Button,
   Chip,
   LinearProgress,
   Avatar,
-  Divider,
   Alert,
   CircularProgress,
   IconButton,
-  Tooltip
 } from '@mui/material';
 import {
   Restaurant as FoodIcon,
@@ -21,25 +17,23 @@ import {
   MonitorHeart as BPIcon,
   TrendingUp as TrendingIcon,
   TrendingDown as TrendingDownIcon,
-  Add as AddIcon,
-  CalendarToday as CalendarIcon,
   LocalFireDepartment as StreakIcon,
   CheckCircle as CheckIcon,
   Warning as WarningIcon,
   Error as ErrorIcon,
   Info as InfoIcon,
-  RestaurantMenu as NutritionIcon
+  RestaurantMenu as NutritionIcon,
+  Restaurant as ForkKnifeIcon
 } from '@mui/icons-material';
-import { useAuth } from '../hooks/useAuth.js';
 import { useNavigate } from 'react-router-dom';
+import { useSettings } from '../hooks/useSettings.js';
 import { fitnessGeekService } from '../services/fitnessGeekService.js';
 import { weightService } from '../services/weightService.js';
 import { bpService } from '../services/bpService.js';
 import { goalsService } from '../services/goalsService.js';
-import { settingsService } from '../services/settingsService.js';
+import { streakService } from '../services/streakService.js';
 
 const Dashboard = () => {
-  const { user: _user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -51,37 +45,27 @@ const Dashboard = () => {
   const [weeklyBP, setWeeklyBP] = useState(null);
   const [goals, setGoals] = useState(null);
   const [loginStreak, setLoginStreak] = useState({ current: 0, longest: 0 });
-  const [dashboardSettings, setDashboardSettings] = useState(settingsService.getDefaultDashboardSettings());
+  const { dashboardSettings, loading: settingsLoading } = useSettings();
 
   // Load dashboard data
   useEffect(() => {
     const loadDashboardData = async () => {
       setLoading(true);
       try {
-        console.log('Starting to load dashboard data...');
-
         // Load data in parallel
         const [
           summaryData,
           weightData,
           bpData,
           goalsData,
-          settingsData
+          streakData
         ] = await Promise.allSettled([
           fitnessGeekService.getTodaySummary(),
           weightService.getWeightStats(),
           bpService.getBPLogs({ limit: 7 }),
           goalsService.getGoals(),
-          settingsService.getSettings()
+          streakService.getLoginStreak()
         ]);
-
-        console.log('All API calls completed:', {
-          summaryData: summaryData.status,
-          weightData: weightData.status,
-          bpData: bpData.status,
-          goalsData: goalsData.status,
-          settingsData: settingsData.status
-        });
 
         // Handle today's summary
         if (summaryData.status === 'fulfilled') {
@@ -112,29 +96,27 @@ const Dashboard = () => {
         }
 
         // Handle goals
-        console.log('Goals API call result:', goalsData);
         if (goalsData.status === 'fulfilled' && goalsData.value && goalsData.value.success) {
-          console.log('Goals data loaded:', goalsData.value.data);
           setGoals(goalsData.value.data);
-        } else {
-          console.log('Goals data failed to load:', goalsData);
-          console.log('Goals data status:', goalsData.status);
-          console.log('Goals data value:', goalsData.value);
-          if (goalsData.status === 'rejected') {
-            console.log('Goals data error:', goalsData.reason);
-          }
         }
 
-        // Handle settings
-        if (settingsData.status === 'fulfilled' && settingsData.value.data) {
-          console.log('Settings data loaded:', settingsData.value.data);
-          setDashboardSettings(settingsData.value.data.dashboard || settingsService.getDefaultDashboardSettings());
+        // Handle login streak
+        if (streakData.status === 'fulfilled' && streakData.value.success) {
+          setLoginStreak({
+            current: streakData.value.data.current,
+            longest: streakData.value.data.longest
+          });
         } else {
-          console.log('Settings data failed to load:', settingsData);
+          // Fallback to 0 if streak data fails
+          setLoginStreak({ current: 0, longest: 0 });
         }
 
-        // Mock login streak for now - replace with real API call later
-        setLoginStreak({ current: 7, longest: 15 });
+        // Record this login visit (only once per day)
+        try {
+          await streakService.recordLogin();
+        } catch (error) {
+          console.error('Failed to record login for streak:', error);
+        }
 
       } catch (error) {
         console.error('Error loading dashboard data:', error);
@@ -171,22 +153,28 @@ const Dashboard = () => {
 
               {weightStats ? (
                 <>
-                  {/* Current Weight */}
+                  {/* Weekly Change - Main Display */}
                   <Typography variant="h5" component="div" sx={{ fontWeight: 600, mb: 1 }}>
-                    {weightStats.currentWeight ? `${weightStats.currentWeight.toFixed(1)} lbs` : 'N/A'}
+                    {weightStats.weeklyChange ? (
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        {getWeightChangeIcon(weightStats.weeklyChange)}
+                        <Typography
+                          variant="h5"
+                          color={getWeightChangeColor(weightStats.weeklyChange)}
+                          sx={{ ml: 0.5, fontWeight: 600 }}
+                        >
+                          {weightStats.weeklyChange > 0 ? '+' : ''}{weightStats.weeklyChange.toFixed(1)} lbs
+                        </Typography>
+                      </Box>
+                    ) : (
+                      'No change'
+                    )}
                   </Typography>
 
-                  {/* Weekly Progress */}
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    {getWeightChangeIcon(weightStats.weeklyChange)}
-                    <Typography
-                      variant="body2"
-                      color={getWeightChangeColor(weightStats.weeklyChange)}
-                      sx={{ ml: 0.5, fontWeight: 500 }}
-                    >
-                      {weightStats.weeklyChange ? `${weightStats.weeklyChange > 0 ? '+' : ''}${weightStats.weeklyChange.toFixed(1)} lbs this week` : 'No change'}
-                    </Typography>
-                  </Box>
+                  {/* Week Label */}
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    This week
+                  </Typography>
 
                   {/* Overall Progress */}
                   {weightStats.totalChange && (
@@ -299,14 +287,7 @@ const Dashboard = () => {
                     {todaySummary.totals?.calories || 0}
                   </Typography>
 
-                  {(() => {
-                    console.log('Calories Today - checking goals:', {
-                      goals_nutrition: goals?.nutrition,
-                      goals_calories: goals?.nutrition?.goals?.calories,
-                      todaySummary_calories: todaySummary.totals?.calories
-                    });
-                    return goals?.nutrition?.goals?.calories;
-                  })() ? (
+                  {goals?.nutrition?.goals?.calories ? (
                     <>
                       <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                         of {goals.nutrition.goals.calories} target
@@ -517,7 +498,7 @@ const Dashboard = () => {
                       transition: 'all 0.2s ease-in-out'
                     }}
                   >
-                    <AddIcon fontSize="large" />
+                    <ForkKnifeIcon fontSize="large" />
                   </IconButton>
 
                   <IconButton
@@ -569,11 +550,6 @@ const Dashboard = () => {
         );
 
       case 'weight_goal':
-        console.log('Rendering weight goal card:', {
-          show_weight_goal: dashboardSettings.show_weight_goal,
-          goals_weight: goals?.weight,
-          goals: goals
-        });
         return dashboardSettings.show_weight_goal && goals?.weight && (
           <Card key="weight-goal" sx={{
             height: '200px',
@@ -592,15 +568,32 @@ const Dashboard = () => {
                 </Typography>
               </Box>
 
-              <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-                {goals.weight.startWeight} → {goals.weight.targetWeight} lbs
-              </Typography>
+              {/* Calculate amount to lose/gain */}
+              {(() => {
+                const totalChange = goals.weight.targetWeight - goals.weight.startWeight;
+                const isLosing = totalChange < 0;
+                const changeText = isLosing ? `Lose ${Math.abs(totalChange).toFixed(1)} lbs` : `Gain ${totalChange.toFixed(1)} lbs`;
 
-              {weightStats && weightStats.currentWeight && (
-                <>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                    Current: {weightStats.currentWeight.toFixed(1)} lbs
+                return (
+                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+                    {changeText}
                   </Typography>
+                );
+              })()}
+
+              {weightStats && weightStats.currentWeight ? (
+                <>
+                  {/* Current Progress */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    {getWeightChangeIcon(weightStats.totalChange)}
+                    <Typography
+                      variant="body2"
+                      color={getWeightChangeColor(weightStats.totalChange)}
+                      sx={{ ml: 0.5, fontWeight: 500 }}
+                    >
+                      {weightStats.totalChange ? `${weightStats.totalChange > 0 ? '+' : ''}${weightStats.totalChange.toFixed(1)} lbs` : 'No change'}
+                    </Typography>
+                  </Box>
 
                   <LinearProgress
                     variant="determinate"
@@ -617,17 +610,16 @@ const Dashboard = () => {
                     />
                   </Box>
                 </>
+              ) : (
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 'auto', pt: 1 }}>
+                  No weight data to track progress
+                </Typography>
               )}
             </CardContent>
           </Card>
         );
 
       case 'nutrition_goal':
-        console.log('Rendering nutrition goal card:', {
-          show_nutrition_goal: dashboardSettings.show_nutrition_goal,
-          goals_nutrition: goals?.nutrition,
-          goals: goals
-        });
         return dashboardSettings.show_nutrition_goal && goals?.nutrition && (
           <Card key="nutrition-goal" sx={{
             height: '200px',
@@ -716,7 +708,7 @@ const Dashboard = () => {
   const handleQuickAction = (action) => {
     switch (action) {
       case 'food':
-        navigate('/food');
+        navigate('/food-log');
         break;
       case 'weight':
         navigate('/weight');
@@ -729,18 +721,13 @@ const Dashboard = () => {
     }
   };
 
-  if (loading) {
+  if (loading || settingsLoading || !dashboardSettings) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
         <CircularProgress />
       </Box>
     );
   }
-
-  // Debug logging
-  console.log('Dashboard - goals:', goals);
-  console.log('Dashboard - dashboardSettings:', dashboardSettings);
-  console.log('Dashboard - todaySummary:', todaySummary);
 
   return (
     <Box sx={{ p: 3 }}>

@@ -58,8 +58,11 @@ const Goals = () => {
     const loadGoals = async () => {
       try {
         setLoadingGoals(true);
-        const goals = await goalsService.getGoals();
-        console.log('Loaded goals from backend:', goals);
+        const response = await goalsService.getGoals();
+        console.log('Loaded goals from backend:', response);
+
+        // Extract the data from the response
+        const goals = response.data;
         console.log('Weight goals check:', goals?.weight);
         console.log('Weight startWeight:', goals?.weight?.startWeight);
         console.log('Weight targetWeight:', goals?.weight?.targetWeight);
@@ -75,13 +78,13 @@ const Goals = () => {
         }
 
         // Handle weight goals - only update if we actually have weight data
-        if (goals && goals.weight && goals.weight.startWeight && goals.weight.targetWeight) {
+        if (goals && goals.weight && goals.weight.startWeight && goals.weight.targetWeight && goals.weight.is_active) {
           setWeightGoal({
             enabled: true,
             startWeight: goals.weight.startWeight,
             targetWeight: goals.weight.targetWeight,
-            startDate: goals.weight.startDate || new Date().toISOString().split('T')[0],
-            goalDate: goals.weight.goalDate || ''
+            startDate: goals.weight.startDate ? new Date(goals.weight.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+            goalDate: goals.weight.goalDate ? new Date(goals.weight.goalDate).toISOString().split('T')[0] : ''
           });
         } else if (goals && goals.weight === null) {
           // If backend explicitly returns null for weight, reset to disabled state

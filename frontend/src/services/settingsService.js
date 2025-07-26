@@ -4,8 +4,10 @@ export const settingsService = {
   // Get user settings
   getSettings: async () => {
     try {
+      console.log('SettingsService: Getting settings...');
       const response = await apiService.get('/settings');
-      return response.data;
+      console.log('SettingsService: Response:', response);
+      return response;
     } catch (error) {
       console.error('Error getting user settings:', error);
       throw error;
@@ -26,8 +28,10 @@ export const settingsService = {
   // Update dashboard settings specifically
   updateDashboardSettings: async (dashboardSettings) => {
     try {
+      console.log('SettingsService: Updating dashboard settings:', dashboardSettings);
       const response = await apiService.put('/settings/dashboard', dashboardSettings);
-      return response.data;
+      console.log('SettingsService: Update response:', response);
+      return response;
     } catch (error) {
       console.error('Error updating dashboard settings:', error);
       throw error;

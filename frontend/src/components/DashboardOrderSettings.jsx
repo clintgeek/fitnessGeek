@@ -70,15 +70,22 @@ const SortableItem = ({ cardKey, cardConfig, settings, onToggleCard }) => {
         border: isDragging ? '2px dashed #6098CC' : '1px solid #e0e0e0',
         borderRadius: 1,
         transition: 'all 0.2s ease-in-out',
-        cursor: 'grab',
-        '&:active': {
-          cursor: 'grabbing',
-        },
       }}
-      {...attributes}
-      {...listeners}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+      {/* Drag area - only this part is draggable */}
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          flex: 1,
+          cursor: 'grab',
+          '&:active': {
+            cursor: 'grabbing',
+          },
+        }}
+        {...attributes}
+        {...listeners}
+      >
         <IconButton
           size="small"
           sx={{ mr: 1, color: '#666' }}
@@ -101,16 +108,29 @@ const SortableItem = ({ cardKey, cardConfig, settings, onToggleCard }) => {
         </Box>
       </Box>
 
-      <FormControlLabel
-        control={
-          <Switch
-            checked={settings[`show_${cardKey}`]}
-            onChange={(e) => onToggleCard(cardKey, e.target.checked)}
-            size="small"
-          />
-        }
-        label=""
-      />
+      {/* Toggle area - separate from drag area */}
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          // Prevent drag events from bubbling up
+          '& *': {
+            pointerEvents: 'auto'
+          }
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <FormControlLabel
+          control={
+            <Switch
+              checked={settings[`show_${cardKey}`]}
+              onChange={(e) => onToggleCard(cardKey, e.target.checked)}
+              size="small"
+            />
+          }
+          label=""
+        />
+      </Box>
     </Paper>
   );
 };

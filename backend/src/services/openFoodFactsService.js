@@ -13,7 +13,7 @@ class OpenFoodFactsService {
    */
   async searchFoods(query, limit = 25) {
     try {
-      console.log(`Searching for: ${query} with limit: ${limit}`);
+
       const response = await axios.get(`${this.baseURL}/cgi/search.pl`, {
         params: {
           search_terms: query,
@@ -23,25 +23,16 @@ class OpenFoodFactsService {
         timeout: 10000
       });
 
-      console.log('OpenFoodFacts response status:', response.status);
-      console.log('OpenFoodFacts response data keys:', Object.keys(response.data || {}));
-      console.log('Products count:', response.data?.products?.length || 0);
-
       if (!response.data || !response.data.products) {
-        console.log('No products found in response');
         return [];
       }
 
       const filteredProducts = response.data.products
         .filter(product => product.product_name && product.nutriments);
 
-      console.log('Filtered products count:', filteredProducts.length);
-
       const transformedProducts = filteredProducts
         .map(product => this.transformProduct(product))
         .slice(0, limit);
-
-      console.log('Transformed products count:', transformedProducts.length);
       return transformedProducts;
 
     } catch (error) {

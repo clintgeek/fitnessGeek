@@ -12,6 +12,8 @@ router.get('/', async (req, res) => {
   try {
     const userId = req.user.id;
 
+
+
     const settings = await UserSettings.getOrCreate(userId);
 
     logger.info('User settings retrieved', { userId });
@@ -84,6 +86,8 @@ router.put('/dashboard', async (req, res) => {
   try {
     const userId = req.user.id;
     const dashboardSettings = req.body;
+
+
 
     // Validate dashboard settings
     const allowedDashboardFields = [

@@ -17,7 +17,7 @@ class FoodApiService {
    */
   async searchFoods(query, limit = 25) {
     try {
-      console.log(`Searching for: ${query} with limit: ${limit}`);
+
 
       // Search across multiple APIs in parallel
       const [usdaResults, nutritionixResults, openFoodFactsResults] = await Promise.allSettled([
@@ -41,12 +41,8 @@ class FoodApiService {
         allResults = allResults.concat(openFoodFactsResults.value);
       }
 
-      console.log(`Raw results: ${allResults.length} from all APIs`);
-
       // Process results using quality service
       const processedResults = foodQualityService.processResults(allResults, query);
-
-      console.log(`Processed results: ${processedResults.length} after quality filtering`);
 
       return processedResults.slice(0, limit);
 
@@ -61,7 +57,6 @@ class FoodApiService {
    */
   async searchUSDA(query, limit = 10) {
     if (!this.usdaApiKey) {
-      console.log('USDA API key not configured');
       return [];
     }
 
@@ -95,7 +90,6 @@ class FoodApiService {
    */
   async searchNutritionix(query, limit = 10) {
     if (!this.nutritionixAppId || !this.nutritionixApiKey) {
-      console.log('Nutritionix API keys not configured');
       return [];
     }
 

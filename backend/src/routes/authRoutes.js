@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const axios = require('axios');
-
 const BASEGEEK_URL = process.env.BASEGEEK_URL || 'https://basegeek.clintgeek.com';
 
 /**
@@ -13,8 +12,6 @@ router.post('/login', async (req, res, next) => {
   try {
     const { identifier, password, app } = req.body;
 
-    console.log(`Login attempt for user: ${identifier}`);
-
     // Forward login request to baseGeek
     const response = await axios.post(`${BASEGEEK_URL}/api/auth/login`, {
       identifier,
@@ -23,8 +20,6 @@ router.post('/login', async (req, res, next) => {
     });
 
     const { token, refreshToken, user } = response.data;
-
-    console.log(`Login successful for user: ${user.username || user.email}`);
 
     res.json({
       success: true,
@@ -71,8 +66,6 @@ router.post('/register', async (req, res, next) => {
   try {
     const { username, email, password, app } = req.body;
 
-    console.log(`Registration attempt for user: ${username || email}`);
-
     // Forward registration request to baseGeek
     const response = await axios.post(`${BASEGEEK_URL}/api/auth/register`, {
       username,
@@ -82,8 +75,6 @@ router.post('/register', async (req, res, next) => {
     });
 
     const { token, refreshToken, user } = response.data;
-
-    console.log(`Registration successful for user: ${user.username || user.email}`);
 
     res.status(201).json({
       success: true,

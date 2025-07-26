@@ -3,25 +3,19 @@ const router = express.Router();
 const { authenticateToken } = require('../middleware/auth');
 const NutritionGoals = require('../models/NutritionGoals');
 const WeightGoals = require('../models/WeightGoals');
-const mongoose = require('mongoose');
 
 // Get user goals
 router.get('/', authenticateToken, async (req, res) => {
     try {
     const userId = req.user?.id;
-    console.log('User ID from token:', userId, 'Type:', typeof userId);
-
     // Use user ID as-is (baseGeek might not use MongoDB ObjectIds)
     const userIdObjectId = userId;
-    console.log('Using user ID as-is:', userIdObjectId);
 
-            // Get nutrition goals from database
+    // Get nutrition goals from database
     const nutritionGoals = await NutritionGoals.getActiveGoals(userIdObjectId);
-    console.log('Fetched nutrition goals:', nutritionGoals);
 
     // Get weight goals from database
     const weightGoals = await WeightGoals.getActiveWeightGoals(userIdObjectId);
-    console.log('Fetched weight goals:', weightGoals);
 
     // Build response structure
     const goals = {
@@ -42,8 +36,6 @@ router.get('/', authenticateToken, async (req, res) => {
         is_active: weightGoals.is_active
       } : null
     };
-
-    console.log('Sending goals response:', goals);
 
     res.json({
       success: true,
@@ -116,8 +108,6 @@ router.post('/', authenticateToken, async (req, res) => {
 
       savedWeight = await WeightGoals.createWeightGoals(userIdObjectId, weightData);
     }
-
-    console.log('Saved goals for user:', userIdObjectId, { savedNutrition, savedWeight });
 
     res.json({
       success: true,

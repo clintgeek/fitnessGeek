@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: fitnessgeek-backend
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - DB_URI=${DB_URI}
+      - JWT_SECRET=${JWT_SECRET}
+      - BASEGEEK_URL=${BASEGEEK_URL}
+      - USDA_API_KEY=${USDA_API_KEY}
+      - NUTRITIONIX_APP_ID=${NUTRITIONIX_APP_ID}
+      - NUTRITIONIX_API_KEY=${NUTRITIONIX_API_KEY}
+    expose:
+      - "3001"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - fitnessgeek_network
+    restart: always
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - BACKEND_PORT=3001
+    container_name: fitnessgeek-frontend
+    environment:
+      - BACKEND_PORT=3001
+      - VITE_API_URL=${VITE_API_URL}
+      - VITE_BASEGEEK_URL=${VITE_BASEGEEK_URL}
+    expose:
+      - "80"  # Only expose internally, nginx reverse proxy will handle external access
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - fitnessgeek_network
+    restart: always
+
+networks:
+  fitnessgeek_network:
+    driver: bridge

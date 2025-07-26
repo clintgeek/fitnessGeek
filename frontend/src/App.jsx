@@ -22,46 +22,49 @@ import Goals from './pages/Goals.jsx';
 
 // Import contexts
 import { AuthProvider } from './contexts/AuthContext.jsx';
+import { SettingsProvider } from './contexts/SettingsContext.jsx';
 
 function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <AuthProvider>
-        <Router>
-          <Box sx={{
-            minHeight: '100vh',
-            backgroundColor: 'background.default'
-          }}>
-            <Routes>
-              {/* Public routes */}
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
+        <SettingsProvider>
+          <Router>
+            <Box sx={{
+              minHeight: '100vh',
+              backgroundColor: 'background.default'
+            }}>
+              <Routes>
+                {/* Public routes */}
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
 
-              {/* Protected routes */}
-              <Route path="/" element={
-                <ProtectedRoute>
-                  <Layout />
-                </ProtectedRoute>
-              }>
-                <Route index element={<Navigate to="/dashboard" replace />} />
-                <Route path="dashboard" element={<Dashboard />} />
-                <Route path="food-search" element={<FoodSearch />} />
-                <Route path="food-log" element={<FoodLog />} />
-                <Route path="my-foods" element={<MyFoods />} />
-                <Route path="recipes" element={<Recipes />} />
-                <Route path="weight" element={<Weight />} />
-                <Route path="blood-pressure" element={<BloodPressure />} />
-                <Route path="goals" element={<Goals />} />
-                <Route path="profile" element={<Profile />} />
-                <Route path="settings" element={<Settings />} />
-              </Route>
+                {/* Protected routes */}
+                <Route path="/" element={
+                  <ProtectedRoute>
+                    <Layout />
+                  </ProtectedRoute>
+                }>
+                  <Route index element={<Navigate to="/dashboard" replace />} />
+                  <Route path="dashboard" element={<Dashboard />} />
+                  <Route path="food-search" element={<FoodSearch />} />
+                  <Route path="food-log" element={<FoodLog />} />
+                  <Route path="my-foods" element={<MyFoods />} />
+                  <Route path="recipes" element={<Recipes />} />
+                  <Route path="weight" element={<Weight />} />
+                  <Route path="blood-pressure" element={<BloodPressure />} />
+                  <Route path="goals" element={<Goals />} />
+                  <Route path="profile" element={<Profile />} />
+                  <Route path="settings" element={<Settings />} />
+                </Route>
 
-              {/* Catch all route */}
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
-            </Routes>
-          </Box>
-        </Router>
+                {/* Catch all route */}
+                <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              </Routes>
+            </Box>
+          </Router>
+        </SettingsProvider>
       </AuthProvider>
     </ThemeProvider>
   );

@@ -38,8 +38,13 @@ const Weight = () => {
       // Load goals from backend
       try {
         const goalsResponse = await goalsService.getGoals();
-        if (goalsResponse && goalsResponse.weight) {
-          setWeightGoal(goalsResponse.weight);
+        if (goalsResponse && goalsResponse.data && goalsResponse.data.weight) {
+          // Convert backend format to frontend format
+          const backendWeightGoal = goalsResponse.data.weight;
+          setWeightGoal({
+            ...backendWeightGoal,
+            enabled: backendWeightGoal.is_active // Convert is_active to enabled
+          });
         }
       } catch (goalsError) {
         console.error('Error loading goals:', goalsError);
@@ -95,7 +100,7 @@ const Weight = () => {
   const getCurrentWeight = () => {
     if (weightLogs.length === 0) {
       // If no logs exist, use start weight from goals
-      return weightGoal && weightGoal.is_active ? weightGoal.startWeight : null;
+      return weightGoal && weightGoal.enabled ? weightGoal.startWeight : null;
     }
     const sortedLogs = [...weightLogs].sort((a, b) => new Date(b.log_date) - new Date(a.log_date));
     return sortedLogs[0].weight_value;
@@ -124,7 +129,7 @@ const Weight = () => {
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
       {/* Progress Tracker - only show if weight goal is set */}
-      {weightGoal && weightGoal.is_active && currentWeight && weightGoal.startWeight && weightGoal.targetWeight && (
+      {weightGoal && weightGoal.enabled && currentWeight && weightGoal.startWeight && weightGoal.targetWeight && (
         <ProgressTracker
           startValue={weightGoal.startWeight}
           currentValue={currentWeight}
@@ -142,7 +147,7 @@ const Weight = () => {
           data={weightLogs}
           title="Weight Trend"
           yAxisLabel="Weight (lbs)"
-          goalLine={Boolean(weightGoal && weightGoal.is_active)}
+          goalLine={Boolean(weightGoal && weightGoal.enabled)}
           startWeight={weightGoal?.startWeight}
           targetWeight={weightGoal?.targetWeight}
         />

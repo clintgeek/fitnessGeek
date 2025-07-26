@@ -4,11 +4,6 @@ const logger = require('../config/logger');
 // JWT secret - should match baseGeek's secret
 const JWT_SECRET = process.env.JWT_SECRET || 'e96335fedffb854e850eef650989f75e1c577bb1e0e95921901e726e951fd58f1f511f0c8aafe9e6657f854f09d9ff3ec35877a3027220766b4b063bb70d0654';
 
-// Debug: Log the JWT secret being used (first 10 chars for security)
-console.log('JWT_SECRET being used:', JWT_SECRET.substring(0, 10) + '...');
-console.log('JWT_SECRET length:', JWT_SECRET.length);
-console.log('process.env.JWT_SECRET:', process.env.JWT_SECRET ? 'set' : 'not set');
-
 // Verify JWT token middleware
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -96,7 +91,6 @@ const optionalAuth = (req, res, next) => {
       logger.debug('Optional auth failed', { error: error.message });
     }
   }
-
   next();
 };
 

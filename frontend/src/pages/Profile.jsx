@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Typography,
@@ -40,11 +40,12 @@ import {
   Flag as GoalsIcon
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth.js';
-import { settingsService } from '../services/settingsService.js';
+import { useSettings } from '../hooks/useSettings.js';
 import DashboardOrderSettings from '../components/DashboardOrderSettings.jsx';
 
 const Profile = () => {
   const { user, logout } = useAuth();
+  const { dashboardSettings, updateDashboardSetting } = useSettings();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -54,64 +55,43 @@ const Profile = () => {
     emailUpdates: true,
     darkMode: false
   });
-  const [dashboardSettings, setDashboardSettings] = useState({
-    show_current_weight: true,
-    show_blood_pressure: true,
-    show_calories_today: true,
-    show_login_streak: true,
-    show_nutrition_today: true,
-    show_quick_actions: true,
-    show_weight_goal: true,
-    show_nutrition_goal: true,
-    card_order: [
-      'current_weight',
-      'blood_pressure',
-      'calories_today',
-      'login_streak',
-      'nutrition_today',
-      'quick_actions',
-      'weight_goal',
-      'nutrition_goal'
-    ]
-  });
-  const [loadingSettings, setLoadingSettings] = useState(false);
   const [editData, setEditData] = useState({
     username: user?.username || user?.name || '',
     email: user?.email || ''
   });
 
-  // Load settings on component mount
-  useEffect(() => {
-    loadSettings();
-  }, []);
-
-  const loadSettings = async () => {
+  const handleDashboardSettingChange = async (setting, value) => {
+    console.log('Profile: handleDashboardSettingChange called with:', setting, value);
     try {
-      setLoadingSettings(true);
-      const response = await settingsService.getSettings();
-      if (response.data && response.data.dashboard) {
-        setDashboardSettings(response.data.dashboard);
+      const result = await updateDashboardSetting(setting, value);
+      console.log('Profile: update result:', result);
+      if (result.success) {
+        console.log('Dashboard setting updated:', setting, value);
+      } else {
+        setError('Failed to save setting. Please try again.');
+        setTimeout(() => setError(''), 3000);
       }
     } catch (error) {
-      console.error('Error loading settings:', error);
-      // Use default settings if loading fails
-    } finally {
-      setLoadingSettings(false);
+      console.error('Error updating dashboard setting:', error);
+      setError('Failed to save setting. Please try again.');
+      setTimeout(() => setError(''), 3000);
     }
   };
 
-  const handleDashboardSettingChange = (setting, value) => {
-    setDashboardSettings(prev => ({
-      ...prev,
-      [setting]: value
-    }));
-  };
-
-  const handleDashboardOrderChange = (newOrder) => {
-    setDashboardSettings(prev => ({
-      ...prev,
-      card_order: newOrder
-    }));
+  const handleDashboardOrderChange = async (newOrder) => {
+    try {
+      const result = await updateDashboardSetting('card_order', newOrder);
+      if (result.success) {
+        console.log('Dashboard order updated:', newOrder);
+      } else {
+        setError('Failed to save order. Please try again.');
+        setTimeout(() => setError(''), 3000);
+      }
+    } catch (error) {
+      console.error('Error updating dashboard order:', error);
+      setError('Failed to save order. Please try again.');
+      setTimeout(() => setError(''), 3000);
+    }
   };
 
   const handleLogout = () => {
@@ -119,18 +99,16 @@ const Profile = () => {
   };
 
   const handleSaveSettings = async () => {
-    setLoadingSettings(true);
+    setLoading(true);
     try {
-      // Save dashboard settings
-      await settingsService.updateDashboardSettings(dashboardSettings);
-      setSuccess('Dashboard settings saved successfully!');
+      setSuccess('Dashboard settings are automatically saved!');
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
-      console.error('Error saving dashboard settings:', error);
+      console.error('Error with settings:', error);
       setError('Failed to save dashboard settings');
       setTimeout(() => setError(''), 3000);
     } finally {
-      setLoadingSettings(false);
+      setLoading(false);
     }
   };
 
@@ -297,10 +275,10 @@ const Profile = () => {
                 <Button
                   variant="contained"
                   onClick={handleSaveSettings}
-                  disabled={loadingSettings}
+                  disabled={loading}
                   sx={{ mr: 1 }}
                 >
-                  {loadingSettings ? 'Saving...' : 'Save Dashboard Settings'}
+                  {loading ? 'Saving...' : 'Save Dashboard Settings'}
                 </Button>
               </Box>
             </CardContent>
