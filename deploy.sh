@@ -21,28 +21,28 @@ fi
 
 # Build and deploy
 echo "📦 Building Docker containers..."
-docker-compose build
+docker compose build
 
 echo "🔄 Stopping existing containers..."
-docker-compose down
+docker compose down
 
 echo "🚀 Starting new containers..."
-docker-compose up -d
+docker compose up -d
 
 echo "⏳ Waiting for services to be healthy..."
 sleep 10
 
 # Check if services are running
 echo "🔍 Checking service health..."
-if docker-compose ps | grep -q "Up"; then
+if docker compose ps | grep -q "Up"; then
     echo "✅ FitnessGeek deployed successfully!"
     echo "🌐 Frontend available internally at: http://192.168.1.17:80"
     echo "🔧 Backend API available internally at: http://192.168.1.17:3001"
     echo "📝 Configure your nginx reverse proxy to point to the frontend container"
 else
-    echo "❌ Deployment failed. Check logs with: docker-compose logs"
+    echo "❌ Deployment failed. Check logs with: docker compose logs"
     exit 1
 fi
 
-echo "📋 To view logs: docker-compose logs -f"
-echo "🛑 To stop: docker-compose down"
+echo "📋 To view logs: docker compose logs -f"
+echo "🛑 To stop: docker compose down"

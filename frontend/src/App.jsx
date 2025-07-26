@@ -19,6 +19,7 @@ import BloodPressure from './pages/BloodPressure.jsx';
 import Profile from './pages/Profile.jsx';
 import Settings from './pages/Settings.jsx';
 import Goals from './pages/Goals.jsx';
+import BarcodeTest from './pages/BarcodeTest.jsx';
 
 // Import contexts
 import { AuthProvider } from './contexts/AuthContext.jsx';
@@ -57,6 +58,7 @@ function App() {
                   <Route path="goals" element={<Goals />} />
                   <Route path="profile" element={<Profile />} />
                   <Route path="settings" element={<Settings />} />
+                  <Route path="barcode-test" element={<BarcodeTest />} />
                 </Route>
 
                 {/* Catch all route */}

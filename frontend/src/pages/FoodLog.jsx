@@ -22,6 +22,7 @@ import FoodSearch from '../components/FoodSearch/FoodSearch.jsx';
 import { fitnessGeekService } from '../services/fitnessGeekService.js';
 import SaveMealDialog from '../components/FoodLog/SaveMealDialog.jsx';
 import EditLogDialog from '../components/FoodLog/EditLogDialog.jsx';
+import BarcodeScanner from '../components/BarcodeScanner/BarcodeScanner.jsx';
 
 const FoodLog = () => {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -37,6 +38,7 @@ const FoodLog = () => {
   const [savingMeal, setSavingMeal] = useState(false);
   const [successMessage, setSuccessMessage] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
+  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
 
   // Mock data for demonstration
   const mockLogs = [
@@ -382,11 +384,24 @@ const FoodLog = () => {
           />
         </DialogContent>
         <DialogActions>
+          <Button onClick={() => setShowBarcodeScanner(true)}>
+            Scan Barcode
+          </Button>
           <Button onClick={() => setShowAddDialog(false)}>
             Cancel
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Barcode Scanner Dialog */}
+      <BarcodeScanner
+        open={showBarcodeScanner}
+        onClose={() => setShowBarcodeScanner(false)}
+        onBarcodeScanned={(food) => {
+          handleFoodSelect(food);
+          setShowBarcodeScanner(false);
+        }}
+      />
 
       {/* Save Meal Dialog */}
       {saveMealData && (

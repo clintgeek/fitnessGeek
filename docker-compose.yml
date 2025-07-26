@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   backend:
     build:
@@ -17,11 +15,7 @@ services:
       - NUTRITIONIX_API_KEY=${NUTRITIONIX_API_KEY}
     expose:
       - "3001"
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3001/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+
     networks:
       - fitnessgeek_network
     restart: always
@@ -37,11 +31,11 @@ services:
       - BACKEND_PORT=3001
       - VITE_API_URL=${VITE_API_URL}
       - VITE_BASEGEEK_URL=${VITE_BASEGEEK_URL}
-    expose:
-      - "80"  # Only expose internally, nginx reverse proxy will handle external access
+    ports:
+      - "4080:80"  # Expose on port 4080, your nginx can proxy to this
+
     depends_on:
-      backend:
-        condition: service_healthy
+      - backend
     networks:
       - fitnessgeek_network
     restart: always

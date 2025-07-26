@@ -37,9 +37,11 @@ import {
   Public as UsdaIcon,
   Store as NutritionixIcon,
   Category as OpenFoodFactsIcon,
-  SetMeal as MealIcon
+  SetMeal as MealIcon,
+  QrCodeScanner as BarcodeIcon
 } from '@mui/icons-material';
-import { fitnessGeekService } from '../../services/fitnessGeekService.js';
+import { fitnessGeekService } from '../../services/fitnessGeekService';
+import BarcodeScanner from '../BarcodeScanner/BarcodeScanner.jsx';
 
 // Source utilities
 const getSourceIcon = (source) => {
@@ -129,6 +131,9 @@ const FoodSearch = ({
     }
   });
   const [servingConfigLoading, setServingConfigLoading] = useState(false);
+
+  // Barcode scanner state
+  const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
 
   // Debounced search effect
   useEffect(() => {
@@ -569,7 +574,18 @@ const FoodSearch = ({
           onChange={(e) => setSearchQuery(e.target.value)}
           InputProps={{
             startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
-            endAdornment: loading && <CircularProgress size={20} />
+            endAdornment: (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                {loading && <CircularProgress size={20} />}
+                <IconButton
+                  onClick={() => setShowBarcodeScanner(true)}
+                  sx={{ color: 'primary.main' }}
+                  size="small"
+                >
+                  <BarcodeIcon />
+                </IconButton>
+              </Box>
+            )
           }}
           sx={{
             '& .MuiOutlinedInput-root': {
@@ -770,6 +786,28 @@ const FoodSearch = ({
         </DialogActions>
       </Dialog>
 
+      {/* Barcode Scanner Dialog */}
+      <BarcodeScanner
+        open={showBarcodeScanner}
+        onClose={() => setShowBarcodeScanner(false)}
+                onBarcodeScanned={(food) => {
+          // Update serving config with actual food data
+          setServingConfig({
+            servings: 1,
+            notes: '',
+            nutrition: {
+              calories_per_serving: food.nutrition?.calories_per_serving || 0,
+              protein_grams: food.nutrition?.protein_grams || 0,
+              carbs_grams: food.nutrition?.carbs_grams || 0,
+              fat_grams: food.nutrition?.fat_grams || 0
+            }
+          });
+
+          handleFoodClick(food);
+          setShowBarcodeScanner(false);
+        }}
+      />
+
       {/* Serving Configuration Dialog */}
       <Dialog open={!!selectedFood} onClose={handleServingConfigCancel} maxWidth="sm" fullWidth>
         <DialogTitle>
@@ -862,6 +900,9 @@ const FoodSearch = ({
 
               <Typography variant="caption" color="text.secondary">
                 Per {selectedFood?.serving?.size || 100}{selectedFood?.serving?.unit || 'g'} serving
+                {selectedFood?.barcode && (
+                  <span> • Barcode: {selectedFood.barcode}</span>
+                )}
               </Typography>
             </Box>
 
