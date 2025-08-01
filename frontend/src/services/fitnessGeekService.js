@@ -106,7 +106,7 @@ export const fitnessGeekService = {
   addFoodToLog: async (logData) => {
     try {
       const response = await apiService.post('/logs', logData);
-      return response.data;
+      return response; // Return full response, not response.data
     } catch (error) {
       console.error('Error adding food to log:', error);
       throw error;
@@ -117,7 +117,7 @@ export const fitnessGeekService = {
   updateFoodLog: async (logId, updateData) => {
     try {
       const response = await apiService.put(`/logs/${logId}`, updateData);
-      return response.data;
+      return response; // Return full response, not response.data
     } catch (error) {
       console.error('Error updating food log:', error);
       throw error;
@@ -128,7 +128,7 @@ export const fitnessGeekService = {
   deleteFoodLog: async (logId) => {
     try {
       const response = await apiService.delete(`/logs/${logId}`);
-      return response;
+      return response; // Return full response, not response.data
     } catch (error) {
       console.error('Error deleting food log:', error);
       throw error;
@@ -213,7 +213,7 @@ export const fitnessGeekService = {
   createMeal: async (mealData) => {
     try {
       const response = await apiService.post('/meals', mealData);
-      return response.data;
+      return response; // Return full response, not response.data
     } catch (error) {
       console.error('Error creating meal:', error);
       throw error;

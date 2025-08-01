@@ -73,15 +73,13 @@ const WeightLogList = ({ logs, onDelete, unit = 'lbs' }) => {
 
   return (
     <Card sx={{
-      backgroundColor: '#fafafa',
-      border: '1px solid #e0e0e0',
-      mb: 2
+      width: '100%',
+      backgroundColor: 'background.paper',
+      borderRadius: 2,
+      boxShadow: 1,
+      border: 'none'
     }}>
-      <CardContent>
-        <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-          Weight History
-        </Typography>
-
+      <CardContent sx={{ p: 3 }}>
         <Box sx={{ maxHeight: 400, overflow: 'auto' }}>
           {sortedLogs.length > 0 ? (
             <List>

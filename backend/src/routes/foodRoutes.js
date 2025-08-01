@@ -34,7 +34,9 @@ router.get('/', async (req, res) => {
             logger.info('Barcode found via external API', {
               userId,
               barcode,
-              source: externalFood.source
+              source: externalFood.source,
+              serving: externalFood.serving,
+              nutrition: externalFood.nutrition
             });
           } else {
             foods = [];

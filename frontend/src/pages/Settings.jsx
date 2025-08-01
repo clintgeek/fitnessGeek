@@ -218,7 +218,7 @@ const Settings = () => {
       </Accordion>
 
       {/* Appearance */}
-      <Card sx={{ mb: 2 }}>
+      <Card sx={{ width: '100%', mb: 2 }}>
         <CardContent>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
             <ThemeIcon sx={{ mr: 1, color: '#6098CC' }} />
@@ -243,7 +243,7 @@ const Settings = () => {
       </Card>
 
       {/* Notifications */}
-      <Card sx={{ mb: 2 }}>
+      <Card sx={{ width: '100%', mb: 2 }}>
         <CardContent>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
             <NotificationsIcon sx={{ mr: 1, color: '#6098CC' }} />
@@ -289,7 +289,7 @@ const Settings = () => {
       </Card>
 
       {/* Units */}
-      <Card sx={{ mb: 2 }}>
+      <Card sx={{ width: '100%', mb: 2 }}>
         <CardContent>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
             <LanguageIcon sx={{ mr: 1, color: '#6098CC' }} />
@@ -327,7 +327,7 @@ const Settings = () => {
       </Card>
 
       {/* General Settings */}
-      <Card sx={{ mb: 2 }}>
+      <Card sx={{ width: '100%', mb: 2 }}>
         <CardContent sx={{ p: 0 }}>
           <List>
             <ListItemButton>
@@ -354,7 +354,7 @@ const Settings = () => {
       </Card>
 
       {/* Support */}
-      <Card sx={{ mb: 2 }}>
+      <Card sx={{ width: '100%', mb: 2 }}>
         <CardContent sx={{ p: 0 }}>
           <List>
             <ListItemButton>

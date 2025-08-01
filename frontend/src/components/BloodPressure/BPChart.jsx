@@ -32,14 +32,13 @@ const BPChart = ({ data, title = "Blood Pressure Trend" }) => {
   if (sortedData.length === 0) {
     return (
       <Card sx={{
-        backgroundColor: '#fafafa',
-        border: '1px solid #e0e0e0',
-        mb: 2
+        width: '100%',
+        backgroundColor: 'background.paper',
+        borderRadius: 2,
+        boxShadow: 1,
+        border: 'none'
       }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-            {title}
-          </Typography>
+        <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
           <Box sx={{
             display: 'flex',
             justifyContent: 'center',
@@ -58,18 +57,20 @@ const BPChart = ({ data, title = "Blood Pressure Trend" }) => {
 
   return (
     <Card sx={{
-      backgroundColor: '#fafafa',
-      border: '1px solid #e0e0e0',
-      mb: 2
+      width: '100%',
+      backgroundColor: 'background.paper',
+      borderRadius: 2,
+      boxShadow: 1,
+      border: 'none'
     }}>
-      <CardContent>
-        <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-          {title}
-        </Typography>
+      <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
 
-        <Box sx={{ height: 300, mt: 2 }}>
+        <Box sx={{ height: 300, mt: 1 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={sortedData}>
+            <LineChart
+              data={sortedData}
+              margin={{ top: 20, right: 30, left: 5, bottom: 20 }}
+            >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis
                 dataKey="date"
@@ -79,6 +80,7 @@ const BPChart = ({ data, title = "Blood Pressure Trend" }) => {
               <YAxis
                 domain={['dataMin - 10', 'dataMax + 10']}
                 tick={{ fontSize: 12 }}
+                width={30}
               />
               <Tooltip
                 formatter={(value, name) => [

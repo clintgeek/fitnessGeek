@@ -1,21 +1,114 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Typography,
   Alert,
-  CircularProgress
+  CircularProgress,
+  useTheme,
+  useMediaQuery,
+  Button,
+  ButtonGroup
 } from '@mui/material';
-import BPChart from '../components/BloodPressure/BPChart.jsx';
+import BPChartNivo from '../components/BloodPressure/BPChartNivo.jsx';
 import QuickAddBP from '../components/BloodPressure/QuickAddBP.jsx';
 import BPLogList from '../components/BloodPressure/BPLogList.jsx';
 import { bpService } from '../services/bpService.js';
 import { getTodayLocal, formatDateLocal } from '../utils/dateUtils.js';
 
 const BloodPressure = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [bpLogs, setBPLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  // Calculate the best default time range based on available data
+  const getBestTimeRange = (data) => {
+    if (!data || data.length === 0) return 'all';
+
+    const sortedData = [...data].sort((a, b) => new Date(b.log_date) - new Date(a.log_date));
+    const mostRecentDate = new Date(sortedData[0].log_date);
+
+    const ranges = [
+      { key: '7', days: 7 },
+      { key: '30', days: 30 },
+      { key: '365', days: 365 },
+      { key: 'all', days: Infinity }
+    ];
+
+    for (const range of ranges) {
+      const cutoffDate = new Date(mostRecentDate.getTime() - (range.days * 24 * 60 * 60 * 1000));
+      const filteredCount = data.filter(item => {
+        if (range.key === 'all') return true;
+        const logDate = new Date(item.log_date);
+        return logDate >= cutoffDate;
+      }).length;
+
+      if (filteredCount >= 2) {
+        return range.key;
+      }
+    }
+
+    return 'all';
+  };
+
+  const [timeRangeState, setTimeRangeState] = useState(() => getBestTimeRange(bpLogs));
+
+  // Update time range when data loads
+  React.useEffect(() => {
+    if (bpLogs.length > 0) {
+      const bestRange = getBestTimeRange(bpLogs);
+      setTimeRangeState(bestRange);
+    }
+  }, [bpLogs]);
+
+  // Filter data based on selected time range
+  const filteredBPLogs = useMemo(() => {
+    if (!bpLogs || bpLogs.length === 0) return [];
+
+    const sortedData = [...bpLogs].sort((a, b) => new Date(b.log_date) - new Date(a.log_date));
+    const mostRecentDate = new Date(sortedData[0].log_date);
+
+    const ranges = {
+      '7': 7,
+      '30': 30,
+      '365': 365,
+      'all': Infinity
+    };
+
+    const daysToSubtract = ranges[timeRangeState];
+    const cutoffDate = new Date(mostRecentDate.getTime() - (daysToSubtract * 24 * 60 * 60 * 1000));
+
+    const filtered = bpLogs
+      .filter(item => {
+        if (timeRangeState === 'all') return true;
+        const logDate = new Date(item.log_date);
+        return logDate >= cutoffDate;
+      })
+      .sort((a, b) => new Date(a.log_date) - new Date(b.log_date));
+
+    return filtered;
+  }, [bpLogs, timeRangeState]);
+
+  const handleTimeRangeChange = (newRange) => {
+    setTimeRangeState(newRange);
+  };
+
+  // Auto-switch to better range if current range has insufficient data
+  React.useEffect(() => {
+    if (filteredBPLogs.length < 2 && filteredBPLogs.length > 0) {
+      const betterRange = getBestTimeRange(bpLogs);
+      if (betterRange !== timeRangeState) {
+        setTimeRangeState(betterRange);
+      }
+    }
+  }, [bpLogs, timeRangeState, filteredBPLogs.length]);
+
+  // Check if we have enough data points for the selected range
+  const hasEnoughData = filteredBPLogs.length >= 2;
+  const insufficientDataMessage = !hasEnoughData && filteredBPLogs.length > 0 ?
+    `Only ${filteredBPLogs.length} data point${filteredBPLogs.length === 1 ? '' : 's'} in this range. Try a larger time range.` : null;
 
   // Load BP data on mount
   useEffect(() => {
@@ -110,7 +203,13 @@ const BloodPressure = () => {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+      <Box sx={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: '50vh',
+        p: 2
+      }}>
         <CircularProgress />
       </Box>
     );
@@ -120,69 +219,154 @@ const BloodPressure = () => {
   const todayBP = getTodayBP();
 
   return (
-    <Box sx={{ p: 2, pb: 8 }}> {/* Consistent padding with other pages, extra bottom padding for FAB */}
-      <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 600, color: '#6098CC' }}>
-        {/* Blood Pressure Tracking */}
-      </Typography>
-
+    <Box sx={{
+      minHeight: '100vh',
+      backgroundColor: theme.palette.background.default,
+      pb: { xs: 8, sm: 2 }
+    }}>
       {/* Success/Error Messages */}
-      {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-
-      {/* Current BP Summary */}
-      {currentBP && (
-        <Box sx={{
-          backgroundColor: '#fafafa',
-          border: '1px solid #e0e0e0',
-          borderRadius: 1,
-          p: 2,
-          mb: 2,
-          textAlign: 'center'
-        }}>
-          <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-            Latest Reading
-          </Typography>
-          <Typography variant="h3" sx={{ fontWeight: 700, color: '#6098CC' }}>
-            {currentBP.systolic}/{currentBP.diastolic}
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            mmHg
-          </Typography>
-          {currentBP.pulse && (
-            <Box sx={{ mt: 1 }}>
-              <Typography variant="h5" sx={{ fontWeight: 600, color: '#666' }}>
-                Pulse: {currentBP.pulse} bpm
-              </Typography>
-            </Box>
-          )}
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            {new Date(currentBP.log_date).toLocaleDateString('en-US', {
-              weekday: 'long',
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            })}
-          </Typography>
+      {success && (
+        <Box sx={{ px: { xs: 1, sm: 2 }, mb: 3 }}>
+          <Alert severity="success" onClose={() => setSuccess('')}>
+            {success}
+          </Alert>
+        </Box>
+      )}
+      {error && (
+        <Box sx={{ px: { xs: 1, sm: 2 }, mb: 3 }}>
+          <Alert severity="error" onClose={() => setError('')}>
+            {error}
+          </Alert>
         </Box>
       )}
 
-      {/* BP Chart */}
+      {/* Current BP Summary */}
+      {currentBP && (
+        <Box sx={{ px: { xs: 1, sm: 2 }, mb: 3 }}>
+          <Box sx={{
+            width: '100%',
+            backgroundColor: 'background.paper',
+            borderRadius: 2,
+            boxShadow: 1,
+            border: 'none',
+            p: { xs: 2, sm: 3 },
+            textAlign: 'center'
+          }}>
+            <Typography variant="h6" sx={{ fontWeight: 600, mb: 1, color: theme.palette.text.primary }}>
+              Latest Reading
+            </Typography>
+            <Typography variant="h3" sx={{ fontWeight: 700, color: theme.palette.primary.main }}>
+              {currentBP.systolic}/{currentBP.diastolic}
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              mmHg
+            </Typography>
+            {currentBP.pulse && (
+              <Box sx={{ mt: 1 }}>
+                <Typography variant="h5" sx={{ fontWeight: 600, color: theme.palette.text.secondary }}>
+                  Pulse: {currentBP.pulse} bpm
+                </Typography>
+              </Box>
+            )}
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              {new Date(currentBP.log_date).toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              })}
+            </Typography>
+          </Box>
+        </Box>
+      )}
+
+      {/* Blood Pressure Chart */}
       {bpLogs.length > 0 && (
-        <BPChart
-          data={bpLogs}
-          title="Blood Pressure Trend"
-        />
+        <>
+          {/* Time Range Buttons */}
+          <Box sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            mb: 2
+          }}>
+            <ButtonGroup
+              size={isMobile ? 'small' : 'medium'}
+              variant="outlined"
+              sx={{
+                '& .MuiButton-root': {
+                  fontSize: isMobile ? '0.7rem' : '0.75rem',
+                  px: isMobile ? 1 : 1.5,
+                  py: isMobile ? 0.25 : 0.5,
+                  minWidth: isMobile ? 'auto' : '60px'
+                }
+              }}
+            >
+              <Button
+                onClick={() => handleTimeRangeChange('7')}
+                variant={timeRangeState === '7' ? 'contained' : 'outlined'}
+                size={isMobile ? 'small' : 'medium'}
+              >
+                7d
+              </Button>
+              <Button
+                onClick={() => handleTimeRangeChange('30')}
+                variant={timeRangeState === '30' ? 'contained' : 'outlined'}
+                size={isMobile ? 'small' : 'medium'}
+              >
+                30d
+              </Button>
+              <Button
+                onClick={() => handleTimeRangeChange('365')}
+                variant={timeRangeState === '365' ? 'contained' : 'outlined'}
+                size={isMobile ? 'small' : 'medium'}
+              >
+                1y
+              </Button>
+              <Button
+                onClick={() => handleTimeRangeChange('all')}
+                variant={timeRangeState === 'all' ? 'contained' : 'outlined'}
+                size={isMobile ? 'small' : 'medium'}
+              >
+                All
+              </Button>
+            </ButtonGroup>
+
+            {/* Insufficient data message */}
+            {insufficientDataMessage && (
+              <Typography variant="caption" sx={{
+                color: theme.palette.warning.main,
+                fontSize: '0.7rem',
+                mt: 1,
+                textAlign: 'center'
+              }}>
+                {insufficientDataMessage}
+              </Typography>
+            )}
+          </Box>
+
+          <Box sx={{ mb: 3 }}>
+            <BPChartNivo
+              data={filteredBPLogs}
+              title="Blood Pressure Trend"
+            />
+          </Box>
+        </>
       )}
 
       {/* Quick Add BP */}
-      <QuickAddBP onAdd={handleAddBP} unit="mmHg" existingTodayBP={todayBP} />
+      <Box sx={{ px: { xs: 1, sm: 2 }, mb: 3 }}>
+        <QuickAddBP onAdd={handleAddBP} unit="mmHg" existingTodayBP={todayBP} />
+      </Box>
 
       {/* BP Log List */}
-      <BPLogList
-        logs={bpLogs}
-        onDelete={handleDeleteBP}
-        unit="mmHg"
-      />
+      <Box sx={{ px: { xs: 1, sm: 2 }, mb: 3 }}>
+        <BPLogList
+          logs={bpLogs}
+          onDelete={handleDeleteBP}
+          unit="mmHg"
+        />
+      </Box>
     </Box>
   );
 };

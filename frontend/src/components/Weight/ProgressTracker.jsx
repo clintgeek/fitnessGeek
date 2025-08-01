@@ -95,20 +95,18 @@ const ProgressTracker = ({
 
   return (
     <Card sx={{
-      backgroundColor: '#fafafa',
-      border: '1px solid #e0e0e0',
-      mb: 2
+      width: '100%',
+      backgroundColor: 'background.paper',
+      borderRadius: 2,
+      boxShadow: 1,
+      border: 'none'
     }}>
-      <CardContent>
-        <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-          {title}
-        </Typography>
-
+      <CardContent sx={{ p: 3 }}>
         <Box sx={{
           display: 'flex',
           justifyContent: 'space-between',
           width: '100%',
-          gap: 2,
+          gap: { xs: 1, sm: 2 },
           flexWrap: { xs: 'wrap', sm: 'nowrap' }
         }}>
           {/* Progress Values */}
@@ -117,7 +115,7 @@ const ProgressTracker = ({
             textAlign: 'center',
             minWidth: { xs: '45%', sm: 'auto' }
           }}>
-            <Typography variant="h4" sx={{ fontWeight: 600, color: '#6098CC' }}>
+            <Typography variant="h4" sx={{ fontWeight: 600, color: 'primary.main' }}>
               {startValue}
             </Typography>
             <Typography variant="body2" color="text.secondary">
@@ -143,7 +141,7 @@ const ProgressTracker = ({
             textAlign: 'center',
             minWidth: { xs: '45%', sm: 'auto' }
           }}>
-            <Typography variant="h4" sx={{ fontWeight: 600, color: '#6098CC' }}>
+            <Typography variant="h4" sx={{ fontWeight: 600, color: 'primary.main' }}>
               {targetValue}
             </Typography>
             <Typography variant="body2" color="text.secondary">

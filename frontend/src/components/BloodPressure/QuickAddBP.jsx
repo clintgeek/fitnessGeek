@@ -6,18 +6,21 @@ import {
   TextField,
   Button,
   Box,
-  Grid,
   Alert,
-  useTheme
+  useTheme,
+  Grid,
+  Fab
 } from '@mui/material';
 import {
   Add as AddIcon,
   MonitorHeart as BPIcon
 } from '@mui/icons-material';
 import { getTodayLocal } from '../../utils/dateUtils.js';
+import AddBPDialog from './AddBPDialog.jsx';
 
 const QuickAddBP = ({ onAdd, unit = "mmHg", existingTodayBP = null }) => {
   const theme = useTheme();
+  const [showDialog, setShowDialog] = useState(false);
   const [systolic, setSystolic] = useState('');
   const [diastolic, setDiastolic] = useState('');
   const [pulse, setPulse] = useState('');
@@ -92,11 +95,11 @@ const QuickAddBP = ({ onAdd, unit = "mmHg", existingTodayBP = null }) => {
     if (isNaN(sys) || isNaN(dia)) return null;
 
     // BP Categories based on American Heart Association guidelines
-    if (sys < 120 && dia < 80) return { status: 'Normal', color: '#4caf50' };
-    if (sys < 130 && dia < 80) return { status: 'Elevated', color: '#ff9800' };
-    if (sys < 140 && dia < 90) return { status: 'High Normal', color: '#ff9800' };
-    if (sys < 160 && dia < 100) return { status: 'Stage 1', color: '#f44336' };
-    if (sys < 180 && dia < 110) return { status: 'Stage 2', color: '#d32f2f' };
+    if (sys < 120 && dia < 80) return { status: 'Normal', color: theme.palette.success.main };
+    if (sys < 130 && dia < 80) return { status: 'Elevated', color: theme.palette.warning.main };
+    if (sys < 140 && dia < 90) return { status: 'High Normal', color: theme.palette.warning.main };
+    if (sys < 160 && dia < 100) return { status: 'Stage 1', color: theme.palette.error.main };
+    if (sys < 180 && dia < 110) return { status: 'Stage 2', color: theme.palette.error.dark };
     return { status: 'Crisis', color: '#b71c1c' };
   };
 
@@ -104,54 +107,55 @@ const QuickAddBP = ({ onAdd, unit = "mmHg", existingTodayBP = null }) => {
 
   return (
     <>
-      {/* Mobile version - Floating Action Button style */}
-      <Box sx={{ display: { xs: 'block', md: 'none' }, mb: 2 }}>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
+      {/* Mobile version - Floating Action Button */}
+      <Box sx={{ display: { xs: 'block', md: 'none' } }}>
+        <Fab
+          color="primary"
+          aria-label="add blood pressure"
+          onClick={() => setShowDialog(true)}
           sx={{
             position: 'fixed',
             bottom: 80,
             right: 16,
             zIndex: 1000,
-            borderRadius: '50%',
             width: 56,
-            height: 56,
-            minWidth: 'unset',
-            boxShadow: 3
+            height: 56
           }}
-        />
+        >
+          <AddIcon />
+        </Fab>
       </Box>
 
       {/* Desktop version */}
       <Card sx={{
+        width: '100%',
         display: { xs: 'none', md: 'block' },
-        mb: 2,
-        backgroundColor: theme.palette.primary.light,
-        color: theme.palette.primary.contrastText,
-        border: '1px solid #e0e0e0'
+        backgroundColor: 'background.paper',
+        borderRadius: 2,
+        boxShadow: 1,
+        border: 'none'
       }}>
-        <CardContent>
+        <CardContent sx={{ p: 3 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            <BPIcon sx={{ mr: 1 }} />
-            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+            <BPIcon sx={{ mr: 1, color: theme.palette.primary.main }} />
+            <Typography variant="h6" sx={{ fontWeight: 600, color: theme.palette.text.primary }}>
               Quick Add Blood Pressure
             </Typography>
           </Box>
 
           {existingTodayBP && (
             <Box sx={{
-              backgroundColor: 'rgba(255, 255, 255, 0.9)',
+              backgroundColor: theme.palette.info.light,
               borderRadius: 1,
               p: 1.5,
               mb: 2,
-              border: '1px solid rgba(255, 255, 255, 0.3)'
+              border: `1px solid ${theme.palette.info.main}`
             }}>
-              <Typography variant="body2" sx={{ color: '#666', fontWeight: 500 }}>
+              <Typography variant="body2" sx={{ color: theme.palette.info.contrastText, fontWeight: 500 }}>
                 📝 You already have a reading for today: <strong>{existingTodayBP.systolic}/{existingTodayBP.diastolic}</strong>
                 {existingTodayBP.pulse && ` (pulse: ${existingTodayBP.pulse})`}
               </Typography>
-              <Typography variant="caption" sx={{ color: '#888' }}>
+              <Typography variant="caption" sx={{ color: theme.palette.info.contrastText }}>
                 Adding a new reading will replace the existing one.
               </Typography>
             </Box>
@@ -159,7 +163,7 @@ const QuickAddBP = ({ onAdd, unit = "mmHg", existingTodayBP = null }) => {
 
           <form onSubmit={handleSubmit}>
             <Grid container spacing={2} alignItems="center">
-              <Grid item xs={12} sm={2}>
+              <Grid xs={12} sm={2}>
                 <TextField
                   fullWidth
                   label="Systolic"
@@ -170,18 +174,10 @@ const QuickAddBP = ({ onAdd, unit = "mmHg", existingTodayBP = null }) => {
                     endAdornment: <Typography variant="caption">{unit}</Typography>
                   }}
                   size="small"
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      backgroundColor: 'white',
-                      '& fieldset': {
-                        borderColor: 'rgba(255,255,255,0.3)'
-                      }
-                    }
-                  }}
                 />
               </Grid>
 
-              <Grid item xs={12} sm={2}>
+              <Grid xs={12} sm={2}>
                 <TextField
                   fullWidth
                   label="Diastolic"
@@ -192,18 +188,10 @@ const QuickAddBP = ({ onAdd, unit = "mmHg", existingTodayBP = null }) => {
                     endAdornment: <Typography variant="caption">{unit}</Typography>
                   }}
                   size="small"
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      backgroundColor: 'white',
-                      '& fieldset': {
-                        borderColor: 'rgba(255,255,255,0.3)'
-                      }
-                    }
-                  }}
                 />
               </Grid>
 
-              <Grid item xs={12} sm={2}>
+              <Grid xs={12} sm={2}>
                 <TextField
                   fullWidth
                   label="Pulse"
@@ -214,49 +202,26 @@ const QuickAddBP = ({ onAdd, unit = "mmHg", existingTodayBP = null }) => {
                     endAdornment: <Typography variant="caption">bpm</Typography>
                   }}
                   size="small"
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      backgroundColor: 'white',
-                      '& fieldset': {
-                        borderColor: 'rgba(255,255,255,0.3)'
-                      }
-                    }
-                  }}
                 />
               </Grid>
 
-              <Grid item xs={12} sm={3}>
+              <Grid xs={12} sm={3}>
                 <TextField
                   fullWidth
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
                   size="small"
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      backgroundColor: 'white',
-                      '& fieldset': {
-                        borderColor: 'rgba(255,255,255,0.3)'
-                      }
-                    }
-                  }}
                 />
               </Grid>
 
-              <Grid item xs={12} sm={3}>
+              <Grid xs={12} sm={3}>
                 <Button
                   type="submit"
                   variant="contained"
                   fullWidth
                   disabled={loading}
                   startIcon={<AddIcon />}
-                  sx={{
-                    backgroundColor: 'white',
-                    color: theme.palette.primary.main,
-                    '&:hover': {
-                      backgroundColor: 'rgba(255,255,255,0.9)'
-                    }
-                  }}
                 >
                   {loading ? 'Adding...' : 'Add'}
                 </Button>
@@ -293,6 +258,14 @@ const QuickAddBP = ({ onAdd, unit = "mmHg", existingTodayBP = null }) => {
           </form>
         </CardContent>
       </Card>
+
+      {/* Mobile Dialog */}
+      <AddBPDialog
+        open={showDialog}
+        onClose={() => setShowDialog(false)}
+        onAdd={onAdd}
+        existingTodayBP={existingTodayBP}
+      />
     </>
   );
 };

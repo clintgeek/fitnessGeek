@@ -353,7 +353,7 @@ const MyFoods = () => {
       />
 
       {/* Foods List */}
-      <Card sx={{ backgroundColor: '#fafafa', border: '1px solid #e0e0e0' }}>
+      <Card sx={{ width: '100%', backgroundColor: '#fafafa', border: '1px solid #e0e0e0' }}>
         <CardContent sx={{ p: 1.5 }}>
           <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
             Saved Foods ({filteredFoods.length})

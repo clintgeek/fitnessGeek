@@ -34,7 +34,7 @@ function App() {
           <Router>
             <Box sx={{
               minHeight: '100vh',
-              backgroundColor: 'background.default'
+              backgroundColor: '#f8f9fa'
             }}>
               <Routes>
                 {/* Public routes */}

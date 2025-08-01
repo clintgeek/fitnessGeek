@@ -113,7 +113,7 @@ const Food = () => {
           {selectedFood && (
             <Box sx={{ mt: 1 }}>
               {/* Food Info */}
-              <Card sx={{ backgroundColor: '#fafafa', border: '1px solid #e0e0e0', mb: 2 }}>
+              <Card sx={{ width: '100%', backgroundColor: '#fafafa', border: '1px solid #e0e0e0', mb: 2 }}>
                 <CardContent sx={{ p: 1.5 }}>
                   <Typography variant="body2" fontWeight={600} gutterBottom>
                     {selectedFood.name}

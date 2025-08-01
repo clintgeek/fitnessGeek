@@ -1,13 +1,13 @@
 import React from 'react';
 import {
   Box,
-  Card,
-  CardContent,
   Typography,
   Button,
   Avatar,
-  Divider
+  Chip,
+  IconButton
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import {
   Add as AddIcon,
   Save as SaveIcon,
@@ -23,22 +23,22 @@ const MEAL_CONFIG = {
   breakfast: {
     title: 'Breakfast',
     icon: BreakfastIcon,
-    color: '#FF9800' // Orange
+    color: 'warning'
   },
   lunch: {
     title: 'Lunch',
     icon: LunchIcon,
-    color: '#4CAF50' // Green
+    color: 'success'
   },
   dinner: {
     title: 'Dinner',
     icon: DinnerIcon,
-    color: '#2196F3' // Blue
+    color: 'info'
   },
   snack: {
     title: 'Snacks',
     icon: SnackIcon,
-    color: '#9C27B0' // Purple
+    color: 'secondary'
   }
 };
 
@@ -52,8 +52,10 @@ const MealSection = ({
   showActions = true,
   compact = false
 }) => {
+  const theme = useTheme();
   const config = MEAL_CONFIG[mealType];
   const IconComponent = config.icon;
+  const color = theme.palette[config.color];
 
   // Calculate meal totals
   const mealTotals = logs.reduce(
@@ -94,84 +96,95 @@ const MealSection = ({
   };
 
   return (
-    <Card sx={{
-      backgroundColor: '#fafafa',
-      border: '1px solid #e0e0e0',
-      mb: 2
+    <Box sx={{
+      backgroundColor: theme.palette.background.paper,
+      borderRadius: 2,
+      boxShadow: theme.shadows[1],
+      overflow: 'hidden',
+      border: 'none'
     }}>
-      <CardContent sx={{ p: compact ? 1 : 1.5 }}>
-        {/* Header */}
-        <Box sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          mb: 1
-        }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Avatar
+      {/* Header */}
+      <Box sx={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        p: { xs: 2, sm: 2.5 },
+        backgroundColor: color.light + '20'
+      }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Avatar
+            sx={{
+              bgcolor: color.light,
+              color: color.main,
+              width: { xs: 36, sm: 40 },
+              height: { xs: 36, sm: 40 }
+            }}
+          >
+            <IconComponent />
+          </Avatar>
+          <Box>
+            <Typography
+              variant="body1"
               sx={{
-                bgcolor: config.color,
-                width: compact ? 32 : 40,
-                height: compact ? 32 : 40
+                fontWeight: 600,
+                fontSize: { xs: '1rem', sm: '1.125rem' },
+                color: theme.palette.text.primary
               }}
             >
-              <IconComponent />
-            </Avatar>
-            <Box>
-              <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                {config.title}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {Math.round(mealTotals.calories)} cal
-              </Typography>
-            </Box>
-          </Box>
-
-          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-            {/* Regular action buttons */}
-            {logs.length > 0 && onSaveMeal && (
-              <Button
-                variant="outlined"
-                size="small"
-                startIcon={<SaveIcon />}
-                onClick={handleSaveMeal}
-                sx={{
-                  borderColor: config.color,
-                  color: config.color,
-                  '&:hover': {
-                    borderColor: config.color,
-                    backgroundColor: `${config.color}10`
-                  }
-                }}
-              >
-                Save Meal
-              </Button>
-            )}
-
-            {onAddFood && (
-              <Button
-                variant="outlined"
-                size="small"
-                startIcon={<AddIcon />}
-                onClick={handleAddFood}
-                sx={{
-                  borderColor: config.color,
-                  color: config.color,
-                  '&:hover': {
-                    borderColor: config.color,
-                    backgroundColor: `${config.color}10`
-                  }
-                }}
-              >
-                Add
-              </Button>
-            )}
+              {config.title}
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                color: theme.palette.text.secondary,
+                fontSize: { xs: '0.875rem', sm: '1rem' }
+              }}
+            >
+              {Math.round(mealTotals.calories)} calories
+            </Typography>
           </Box>
         </Box>
 
-        <Divider sx={{ mb: 1 }} />
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+          {/* Save Meal Button */}
+          {logs.length > 0 && onSaveMeal && (
+            <IconButton
+              onClick={handleSaveMeal}
+              sx={{
+                color: color.main,
+                backgroundColor: color.light + '30',
+                '&:hover': {
+                  backgroundColor: color.light + '50'
+                }
+              }}
+              size="small"
+            >
+              <SaveIcon fontSize="small" />
+            </IconButton>
+          )}
 
-        {/* Food Logs */}
+          {/* Add Food Button */}
+          {onAddFood && (
+            <IconButton
+              onClick={handleAddFood}
+              sx={{
+                color: 'white',
+                backgroundColor: color.main,
+                '&:hover': {
+                  backgroundColor: color.dark,
+                  opacity: 0.9
+                }
+              }}
+              size="small"
+            >
+              <AddIcon fontSize="small" />
+            </IconButton>
+          )}
+        </Box>
+      </Box>
+
+      {/* Content */}
+      <Box sx={{ p: { xs: 1.5, sm: 2 } }}>
         {logs.length > 0 ? (
           <Box>
             {logs.map((log) => (
@@ -188,21 +201,26 @@ const MealSection = ({
         ) : (
           <Box sx={{
             textAlign: 'center',
-            py: 3,
-            color: 'text.secondary'
+            py: { xs: 3, sm: 4 },
+            color: theme.palette.text.secondary
           }}>
-            <IconComponent sx={{ fontSize: 48, mb: 1, opacity: 0.5 }} />
-            <Typography variant="body2" sx={{ mb: 1 }}>
-              No foods logged for {config.title}
+            <Typography variant="body2">
+              No foods logged yet
             </Typography>
             {onAddFood && (
               <Button
+                onClick={handleAddFood}
+                startIcon={<AddIcon />}
                 variant="outlined"
                 size="small"
-                onClick={handleAddFood}
                 sx={{
-                  borderColor: config.color,
-                  color: config.color
+                  mt: 1,
+                  borderColor: color.main,
+                  color: color.main,
+                  '&:hover': {
+                    borderColor: color.dark,
+                    backgroundColor: color.light + '20'
+                  }
                 }}
               >
                 Add Food
@@ -210,8 +228,8 @@ const MealSection = ({
             )}
           </Box>
         )}
-      </CardContent>
-    </Card>
+      </Box>
+    </Box>
   );
 };
 

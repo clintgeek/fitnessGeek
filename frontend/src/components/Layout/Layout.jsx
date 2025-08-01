@@ -62,7 +62,7 @@ const Layout = () => {
         component="main"
         sx={{
           flexGrow: 1,
-          backgroundColor: '#ffffff', // White background like BuJoGeek
+          backgroundColor: '#f8f9fa', // Grey background to match cards
           minHeight: 'calc(100vh - 64px - 56px)', // Account for header and bottom nav
           paddingBottom: '56px', // Space for bottom navigation
         }}
@@ -71,7 +71,7 @@ const Layout = () => {
           maxWidth: '1200px',
           margin: '0 auto',
           width: '100%',
-          padding: '0 16px',
+          padding: '0 8px',
           display: 'flex',
           flexDirection: 'column'
         }}>

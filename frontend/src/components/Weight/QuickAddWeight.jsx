@@ -75,20 +75,14 @@ const QuickAddWeight = ({ onAdd, unit = 'lbs' }) => {
 
       {/* Quick Add Card for desktop */}
       <Card sx={{
+        width: '100%',
         display: { xs: 'none', md: 'block' },
-        mb: 2,
-        backgroundColor: theme.palette.primary.light,
-        color: theme.palette.primary.contrastText,
-        border: '1px solid #e0e0e0'
+        backgroundColor: 'background.paper',
+        borderRadius: 2,
+        boxShadow: 1,
+        border: 'none'
       }}>
-        <CardContent>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            <WeightIcon sx={{ mr: 1 }} />
-            <Typography variant="h6" sx={{ fontWeight: 600 }}>
-              Quick Add Weight
-            </Typography>
-          </Box>
-
+        <CardContent sx={{ p: 3 }}>
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
             <TextField
               label={`Weight (${unit})`}
@@ -111,13 +105,6 @@ const QuickAddWeight = ({ onAdd, unit = 'lbs' }) => {
               variant="contained"
               onClick={handleSubmit}
               disabled={!value || loading}
-              sx={{
-                backgroundColor: theme.palette.background.paper,
-                color: theme.palette.primary.main,
-                '&:hover': {
-                  backgroundColor: theme.palette.background.default
-                }
-              }}
             >
               Add
             </Button>

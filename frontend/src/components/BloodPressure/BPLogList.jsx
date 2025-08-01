@@ -47,14 +47,13 @@ const BPLogList = ({ logs, onDelete, unit = "mmHg" }) => {
   if (logs.length === 0) {
     return (
       <Card sx={{
-        backgroundColor: '#fafafa',
-        border: '1px solid #e0e0e0',
-        mb: 2
+        width: '100%',
+        backgroundColor: 'background.paper',
+        borderRadius: 2,
+        boxShadow: 1,
+        border: 'none'
       }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-            Blood Pressure History
-          </Typography>
+        <CardContent sx={{ p: 3 }}>
           <Box sx={{
             display: 'flex',
             justifyContent: 'center',
@@ -76,14 +75,13 @@ const BPLogList = ({ logs, onDelete, unit = "mmHg" }) => {
 
   return (
     <Card sx={{
-      backgroundColor: '#fafafa',
-      border: '1px solid #e0e0e0',
-      mb: 2
+      width: '100%',
+      backgroundColor: 'background.paper',
+      borderRadius: 2,
+      boxShadow: 1,
+      border: 'none'
     }}>
-      <CardContent>
-        <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-          Blood Pressure History
-        </Typography>
+      <CardContent sx={{ p: 3 }}>
 
         <List sx={{ p: 0 }}>
           {sortedLogs.map((log) => {

@@ -12,9 +12,9 @@ import {
   Switch,
   FormControlLabel,
   Divider,
-  Grid,
   Alert,
-  CircularProgress
+  CircularProgress,
+  Grid
 } from '@mui/material';
 import {
   Flag as GoalsIcon,
@@ -181,18 +181,20 @@ const Goals = () => {
       } : null
     };
 
-    // Add nutrition goals for any values the user has specified
-    if (nutritionGoals.calories > 0) {
-      goalsToSave.nutrition.goals.calories = nutritionGoals.calories;
-    }
-    if (nutritionGoals.protein > 0) {
-      goalsToSave.nutrition.goals.protein = nutritionGoals.protein;
-    }
-    if (nutritionGoals.carbs > 0) {
-      goalsToSave.nutrition.goals.carbs = nutritionGoals.carbs;
-    }
-    if (nutritionGoals.fat > 0) {
-      goalsToSave.nutrition.goals.fat = nutritionGoals.fat;
+    // Only add nutrition goals if trackMacros is enabled
+    if (nutritionGoals.trackMacros) {
+      if (nutritionGoals.calories > 0) {
+        goalsToSave.nutrition.goals.calories = nutritionGoals.calories;
+      }
+      if (nutritionGoals.protein > 0) {
+        goalsToSave.nutrition.goals.protein = nutritionGoals.protein;
+      }
+      if (nutritionGoals.carbs > 0) {
+        goalsToSave.nutrition.goals.carbs = nutritionGoals.carbs;
+      }
+      if (nutritionGoals.fat > 0) {
+        goalsToSave.nutrition.goals.fat = nutritionGoals.fat;
+      }
     }
 
     try {
@@ -260,7 +262,7 @@ const Goals = () => {
 
           {nutritionGoals.trackMacros ? (
             <Grid container spacing={2}>
-              <Grid item xs={6}>
+              <Grid xs={6}>
                 <TextField
                   fullWidth
                   label="Daily Calories (Optional)"
@@ -270,7 +272,7 @@ const Goals = () => {
                   InputProps={{ endAdornment: 'cal' }}
                 />
               </Grid>
-              <Grid item xs={6}>
+              <Grid xs={6}>
                 <TextField
                   fullWidth
                   label="Protein (Optional)"
@@ -280,7 +282,7 @@ const Goals = () => {
                   InputProps={{ endAdornment: 'g' }}
                 />
               </Grid>
-              <Grid item xs={6}>
+              <Grid xs={6}>
                 <TextField
                   fullWidth
                   label="Carbohydrates (Required)"
@@ -291,7 +293,7 @@ const Goals = () => {
                   InputProps={{ endAdornment: 'g' }}
                 />
               </Grid>
-              <Grid item xs={6}>
+              <Grid xs={6}>
                 <TextField
                   fullWidth
                   label="Fat (Optional)"
@@ -304,7 +306,7 @@ const Goals = () => {
             </Grid>
           ) : (
             <Grid container spacing={2}>
-              <Grid item xs={12}>
+              <Grid xs={12}>
                 <TextField
                   fullWidth
                   label="Daily Calories (Required)"
@@ -344,7 +346,7 @@ const Goals = () => {
 
           {weightGoal.enabled && (
             <Grid container spacing={2}>
-              <Grid item xs={6}>
+              <Grid xs={6}>
                 <TextField
                   fullWidth
                   label="Starting Weight"
@@ -360,7 +362,7 @@ const Goals = () => {
                   helperText="Enter to one decimal place"
                 />
               </Grid>
-              <Grid item xs={6}>
+              <Grid xs={6}>
                 <TextField
                   fullWidth
                   label="Target Weight"
@@ -376,7 +378,7 @@ const Goals = () => {
                   helperText="Enter to one decimal place"
                 />
               </Grid>
-              <Grid item xs={6}>
+              <Grid xs={6}>
                 <TextField
                   fullWidth
                   label="Start Date"
@@ -386,7 +388,7 @@ const Goals = () => {
                   InputLabelProps={{ shrink: true }}
                 />
               </Grid>
-              <Grid item xs={6}>
+              <Grid xs={6}>
                 <TextField
                   fullWidth
                   label="Goal Date (Optional)"

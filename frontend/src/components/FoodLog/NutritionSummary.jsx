@@ -1,12 +1,10 @@
 import React from 'react';
 import {
   Box,
-  Card,
-  CardContent,
   Typography,
-  LinearProgress,
-  Divider
+  LinearProgress
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import {
   LocalFireDepartment as CaloriesIcon,
   FitnessCenter as ProteinIcon,
@@ -14,176 +12,213 @@ import {
   Opacity as FatIcon
 } from '@mui/icons-material';
 
+// RDA values for a 2000 calorie diet
+const RDA_VALUES = {
+  calories: 2000,
+  protein: 50, // 10% of calories (2000 * 0.1 / 4 = 50g)
+  carbs: 250,  // 50% of calories (2000 * 0.5 / 4 = 250g)
+  fat: 65      // 30% of calories (2000 * 0.3 / 9 = 67g, rounded to 65)
+};
+
 const NutritionSummary = ({
   summary,
-  showGoals = true,
-  compact = false
+  showGoals = true
 }) => {
-  const {
-    calories,
-    protein,
-    carbs,
-    fat,
-    calorieGoal = 2000,
-    proteinGoal = 150,
-    carbsGoal = 200,
-    fatGoal = 65
-  } = summary;
+  const theme = useTheme();
 
-  const calorieProgress = Math.min((calories / calorieGoal) * 100, 100);
-  const proteinProgress = Math.min((protein / proteinGoal) * 100, 100);
-  const carbsProgress = Math.min((carbs / carbsGoal) * 100, 100);
-  const fatProgress = Math.min((fat / fatGoal) * 100, 100);
+  const {
+    calories = 0,
+    protein = 0,
+    carbs = 0,
+    fat = 0,
+    calorieGoal = 0,
+    proteinGoal = 0,
+    carbsGoal = 0,
+    fatGoal = 0
+  } = summary || {};
+
+  // Use RDA values as fallback when goals are 0
+  const effectiveCalorieGoal = calorieGoal > 0 ? calorieGoal : RDA_VALUES.calories;
+  const effectiveProteinGoal = proteinGoal > 0 ? proteinGoal : RDA_VALUES.protein;
+  const effectiveCarbsGoal = carbsGoal > 0 ? carbsGoal : RDA_VALUES.carbs;
+  const effectiveFatGoal = fatGoal > 0 ? fatGoal : RDA_VALUES.fat;
+
+  const calorieProgress = Math.min((calories / effectiveCalorieGoal) * 100, 100);
+  const proteinProgress = Math.min((protein / effectiveProteinGoal) * 100, 100);
+  const carbsProgress = Math.min((carbs / effectiveCarbsGoal) * 100, 100);
+  const fatProgress = Math.min((fat / effectiveFatGoal) * 100, 100);
 
   const nutritionItems = [
     {
       label: 'Calories',
       value: calories,
-      goal: calorieGoal,
+      goal: effectiveCalorieGoal,
       progress: calorieProgress,
       icon: CaloriesIcon,
-      color: '#FF5722',
-      unit: 'cal'
+      color: theme.palette.success.main,
+      unit: 'cal',
+      hasGoal: true, // Always show progress for calories
+      isRDA: calorieGoal === 0
     },
     {
       label: 'Protein',
       value: protein,
-      goal: proteinGoal,
+      goal: effectiveProteinGoal,
       progress: proteinProgress,
       icon: ProteinIcon,
-      color: '#4CAF50',
-      unit: 'g'
+      color: theme.palette.info.main,
+      unit: 'g',
+      hasGoal: true, // Always show progress for macros
+      isRDA: proteinGoal === 0
     },
     {
       label: 'Carbs',
       value: carbs,
-      goal: carbsGoal,
+      goal: effectiveCarbsGoal,
       progress: carbsProgress,
       icon: CarbsIcon,
-      color: '#FF9800',
-      unit: 'g'
+      color: theme.palette.warning.main,
+      unit: 'g',
+      hasGoal: true, // Always show progress for macros
+      isRDA: carbsGoal === 0
     },
     {
       label: 'Fat',
       value: fat,
-      goal: fatGoal,
+      goal: effectiveFatGoal,
       progress: fatProgress,
       icon: FatIcon,
-      color: '#9C27B0',
-      unit: 'g'
+      color: theme.palette.secondary.main,
+      unit: 'g',
+      hasGoal: true, // Always show progress for macros
+      isRDA: fatGoal === 0
     }
   ];
 
   return (
-    <Card sx={{
-      backgroundColor: '#fafafa',
-      border: '1px solid #e0e0e0',
-      mb: 2
+    <Box sx={{
+      backgroundColor: theme.palette.background.paper,
+      borderRadius: 2,
+      p: { xs: 2, sm: 3 },
+      boxShadow: theme.shadows[1],
+      border: 'none'
     }}>
-      <CardContent sx={{ p: compact ? 1 : 1.5 }}>
-        <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-          Daily Summary
-        </Typography>
+      <Box sx={{
+        display: 'grid',
+        gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' },
+        gap: { xs: 1.5, sm: 2 }
+      }}>
+        {nutritionItems.map((item) => {
+          const IconComponent = item.icon;
+          const isOverGoal = item.value > item.goal;
 
-        <Box sx={{
-          display: 'grid',
-          gridTemplateColumns: compact ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
-          gap: compact ? 1 : 2
-        }}>
-          {nutritionItems.map((item) => {
-            const IconComponent = item.icon;
-            const isOverGoal = item.value > item.goal;
-
-            return (
-              <Box key={item.label} sx={{ textAlign: 'center' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 0.5 }}>
-                  <IconComponent
-                    sx={{
-                      fontSize: compact ? 16 : 20,
-                      color: item.color,
-                      mr: 0.5
-                    }}
-                  />
-                  <Typography variant="caption" color="text.secondary">
-                    {item.label}
-                  </Typography>
-                </Box>
-
+          return (
+            <Box
+              key={item.label}
+              sx={{
+                textAlign: 'center',
+                p: 1.5,
+                borderRadius: 1,
+                backgroundColor: theme.palette.grey[50],
+                border: 'none'
+              }}
+            >
+              <Box sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                mb: 1
+              }}>
+                <IconComponent
+                  sx={{
+                    color: item.color,
+                    fontSize: { xs: '1.25rem', sm: '1.5rem' },
+                    mr: 0.5
+                  }}
+                />
                 <Typography
-                  variant={compact ? "body2" : "h6"}
-                  fontWeight={600}
-                  color={isOverGoal ? 'error.main' : 'text.primary'}
+                  variant="caption"
+                  sx={{
+                    color: theme.palette.text.secondary,
+                    fontWeight: 500,
+                    fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                  }}
                 >
-                  {Math.round(item.value)}
-                  {showGoals && (
-                    <Typography
-                      component="span"
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ ml: 0.5 }}
-                    >
-                      / {item.goal}
-                    </Typography>
-                  )}
-                  <Typography
-                    component="span"
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ ml: 0.25 }}
-                  >
-                    {item.unit}
-                  </Typography>
+                  {item.label}
                 </Typography>
+              </Box>
 
-                {showGoals && (
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 700,
+                  fontSize: { xs: '1rem', sm: '1.25rem' },
+                  color: isOverGoal ? theme.palette.error.main : theme.palette.text.primary,
+                  mb: 0.5
+                }}
+              >
+                {Math.round(item.value)}
+                <Typography
+                  component="span"
+                  variant="caption"
+                  sx={{
+                    color: theme.palette.text.secondary,
+                    ml: 0.5,
+                    fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                  }}
+                >
+                  {item.unit}
+                </Typography>
+              </Typography>
+
+              {/* Show progress for all macros, with RDA indicator */}
+              {showGoals && (
+                <Box sx={{ mt: 1 }}>
+                  <Box sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    mb: 0.5
+                  }}>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: theme.palette.text.secondary,
+                        fontSize: { xs: '0.625rem', sm: '0.75rem' }
+                      }}
+                    >
+                      {item.isRDA ? 'RDA' : 'Goal'}: {item.goal}
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: theme.palette.text.secondary,
+                        fontSize: { xs: '0.625rem', sm: '0.75rem' }
+                      }}
+                    >
+                      {Math.round(item.progress)}%
+                    </Typography>
+                  </Box>
                   <LinearProgress
                     variant="determinate"
                     value={item.progress}
                     sx={{
-                      mt: 0.5,
                       height: 4,
                       borderRadius: 2,
-                      backgroundColor: `${item.color}20`,
+                      backgroundColor: theme.palette.grey[200],
                       '& .MuiLinearProgress-bar': {
-                        backgroundColor: item.color
+                        backgroundColor: item.color,
+                        borderRadius: 2
                       }
                     }}
                   />
-                )}
-              </Box>
-            );
-          })}
-        </Box>
-
-        {/* Total Calories Progress Bar */}
-        {showGoals && (
-          <Box sx={{ mt: 2 }}>
-            <Divider sx={{ mb: 1 }} />
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-              <Typography variant="body2" fontWeight={600}>
-                Daily Progress
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {Math.round(calorieProgress)}%
-              </Typography>
+                </Box>
+              )}
             </Box>
-            <LinearProgress
-              variant="determinate"
-              value={calorieProgress}
-              sx={{
-                height: 8,
-                borderRadius: 4,
-                backgroundColor: '#e0e0e0',
-                '& .MuiLinearProgress-bar': {
-                  backgroundColor: calories > calorieGoal ? '#f44336' : '#6098CC',
-                  borderRadius: 4
-                }
-              }}
-            />
-          </Box>
-        )}
-      </CardContent>
-    </Card>
+          );
+        })}
+      </Box>
+    </Box>
   );
 };
 
