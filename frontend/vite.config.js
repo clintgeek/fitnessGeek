@@ -25,5 +25,8 @@ export default defineConfig({
         }
       }
     }
-  }
+  },
+  // PWA configuration
+  publicDir: 'public',
+  assetsInclude: ['**/*.png', '**/*.jpg', '**/*.svg', '**/*.ico'],
 })
