@@ -266,7 +266,7 @@ const FoodSearch = ({
           InputProps={{
             startAdornment: <SearchIcon sx={{ mr: 1, color: '#666' }} />,
             endAdornment: (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mr: 2 }}>
                 {loading && <CircularProgress size={20} />}
                 <IconButton
                   onClick={() => setShowBarcodeScanner(true)}
@@ -337,18 +337,26 @@ const FoodSearch = ({
           onClose={() => setSelectedFood(null)}
           maxWidth="xs"
           fullWidth
+          PaperProps={{
+            sx: {
+              borderRadius: { xs: 0, sm: 2 },
+              margin: { xs: 0, sm: 2 },
+              maxHeight: { xs: '100vh', sm: '90vh' },
+              width: { xs: '100%', sm: 'auto' }
+            }
+          }}
         >
-          <DialogTitle sx={{ pb: 1 }}>
+          <DialogTitle sx={{ pb: 2, px: { xs: 3, sm: 4 } }}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Typography variant="h6">
                 Add Food
               </Typography>
-              <IconButton onClick={() => setSelectedFood(null)} size="small">
+              <IconButton onClick={() => setSelectedFood(null)} size="large">
                 <CloseIcon />
               </IconButton>
             </Box>
           </DialogTitle>
-          <DialogContent>
+          <DialogContent sx={{ px: { xs: 3, sm: 4 } }}>
             {/* Food Info */}
             <Box sx={{ mb: 3 }}>
               <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
@@ -462,14 +470,15 @@ const FoodSearch = ({
               </Box>
             </Box>
           </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setSelectedFood(null)}>
+          <DialogActions sx={{ p: { xs: 3, sm: 4 }, pt: 2, gap: 2 }}>
+            <Button onClick={() => setSelectedFood(null)} size="large">
               Cancel
             </Button>
             <Button
               onClick={handleAddFood}
               variant="contained"
               startIcon={<AddIcon />}
+              size="large"
             >
               Add Food
             </Button>

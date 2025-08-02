@@ -86,14 +86,16 @@ const AddFoodDialog = ({
         fullWidth
         PaperProps={{
           sx: {
-            borderRadius: 3,
-            margin: { xs: 1, sm: 2 }
+            borderRadius: { xs: 0, sm: 3 },
+            margin: { xs: 0, sm: 2 },
+            maxHeight: { xs: '100vh', sm: '90vh' },
+            width: { xs: '100%', sm: 'auto' }
           }
         }}
       >
         <DialogTitle sx={{
-          pb: 1,
-          px: { xs: 2, sm: 3 }
+          pb: 2,
+          px: { xs: 3, sm: 4 }
         }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <Avatar sx={{ bgcolor: '#4caf50', width: 40, height: 40 }}>
@@ -104,7 +106,7 @@ const AddFoodDialog = ({
             </Typography>
           </Box>
         </DialogTitle>
-        <DialogContent sx={{ px: { xs: 2, sm: 3 } }}>
+        <DialogContent sx={{ px: { xs: 3, sm: 4 } }}>
           {!selectedFood ? (
             <FoodSearch
               onFoodSelect={handleFoodSelect}
@@ -191,22 +193,26 @@ const AddFoodDialog = ({
           )}
         </DialogContent>
         <DialogActions sx={{
-          px: { xs: 2, sm: 3 },
-          pb: { xs: 2, sm: 3 },
-          gap: 1
+          px: { xs: 3, sm: 4 },
+          pb: { xs: 3, sm: 4 },
+          gap: 2,
+          flexDirection: { xs: 'column', sm: 'row' },
+          alignItems: 'stretch'
         }}>
           {!selectedFood && (
             <Button
               onClick={() => onShowBarcodeScanner(true)}
               variant="outlined"
               startIcon={<AddIcon />}
+              size="large"
               sx={{
                 borderColor: '#6098CC',
                 color: '#6098CC',
                 '&:hover': {
                   borderColor: '#4a7ba8',
                   backgroundColor: '#f0f8ff'
-                }
+                },
+                minHeight: { xs: '48px', sm: 'auto' }
               }}
             >
               Scan Barcode
@@ -216,6 +222,7 @@ const AddFoodDialog = ({
             <Button
               onClick={() => setSelectedFood(null)}
               variant="text"
+              size="large"
               sx={{ color: '#666' }}
             >
               Back to Search
@@ -226,6 +233,7 @@ const AddFoodDialog = ({
               onClick={handleAddFood}
               variant="contained"
               startIcon={<AddIcon />}
+              size="large"
               sx={{
                 bgcolor: '#4caf50',
                 '&:hover': {
@@ -239,6 +247,7 @@ const AddFoodDialog = ({
           <Button
             onClick={handleClose}
             variant="text"
+            size="large"
             sx={{ color: '#666' }}
           >
             Cancel
