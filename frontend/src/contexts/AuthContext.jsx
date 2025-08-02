@@ -13,22 +13,47 @@ export const AuthProvider = ({ children }) => {
     initializeAuth();
   }, []);
 
-    const initializeAuth = async () => {
+  // Set up periodic token refresh
+  useEffect(() => {
+    if (user) {
+      // Refresh token every 30 minutes to keep session alive
+      const refreshInterval = setInterval(async () => {
+        try {
+          await authService.refreshToken();
+          console.log('Token refreshed successfully');
+        } catch (error) {
+          console.error('Periodic token refresh failed:', error);
+          // If refresh fails, logout user
+          logout();
+        }
+      }, 30 * 60 * 1000); // 30 minutes
+
+      return () => clearInterval(refreshInterval);
+    }
+  }, [user]);
+
+  const initializeAuth = async () => {
     try {
       setLoading(true);
 
       // Check if user is authenticated
       if (authService.isAuthenticated()) {
-        // Validate token first
-        const isValid = await authService.validateToken();
-        if (isValid) {
-          // Try to get current user
+        try {
+          // Try to get current user (this will trigger token refresh if needed)
           const currentUser = await authService.getCurrentUser();
           setUser(currentUser);
-        } else {
-          // Token is invalid, logout the user
-          authService.logout();
-          setUser(null);
+        } catch (error) {
+          console.error('Error getting current user:', error);
+          // If getting user fails, try to refresh token
+          try {
+            const refreshResult = await authService.refreshToken();
+            setUser(refreshResult.user);
+          } catch (refreshError) {
+            console.error('Token refresh failed:', refreshError);
+            // If refresh fails, logout the user
+            authService.logout();
+            setUser(null);
+          }
         }
       }
     } catch (error) {
