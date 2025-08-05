@@ -9,9 +9,13 @@ import {
   Button,
   ButtonGroup
 } from '@mui/material';
+import {
+  PictureAsPdf as PdfIcon
+} from '@mui/icons-material';
 import BPChartNivo from '../components/BloodPressure/BPChartNivo.jsx';
 import QuickAddBP from '../components/BloodPressure/QuickAddBP.jsx';
 import BPLogList from '../components/BloodPressure/BPLogList.jsx';
+import BPReport from '../components/BloodPressure/BPReport.jsx';
 import { bpService } from '../services/bpService.js';
 import { getTodayLocal, formatDateLocal } from '../utils/dateUtils.js';
 
@@ -22,6 +26,7 @@ const BloodPressure = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showReport, setShowReport] = useState(false);
 
   // Calculate the best default time range based on available data
   const getBestTimeRange = (data) => {
@@ -283,54 +288,79 @@ const BloodPressure = () => {
       {/* Blood Pressure Chart */}
       {bpLogs.length > 0 && (
         <>
-          {/* Time Range Buttons */}
+          {/* Time Range Buttons and Export */}
           <Box sx={{
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             mb: 2
           }}>
-            <ButtonGroup
-              size={isMobile ? 'small' : 'medium'}
-              variant="outlined"
-              sx={{
-                '& .MuiButton-root': {
-                  fontSize: isMobile ? '0.7rem' : '0.75rem',
-                  px: isMobile ? 1 : 1.5,
-                  py: isMobile ? 0.25 : 0.5,
-                  minWidth: isMobile ? 'auto' : '60px'
-                }
-              }}
-            >
-              <Button
-                onClick={() => handleTimeRangeChange('7')}
-                variant={timeRangeState === '7' ? 'contained' : 'outlined'}
+            <Box sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 2,
+              flexWrap: 'wrap',
+              justifyContent: 'center'
+            }}>
+              <ButtonGroup
                 size={isMobile ? 'small' : 'medium'}
+                variant="outlined"
+                sx={{
+                  '& .MuiButton-root': {
+                    fontSize: isMobile ? '0.7rem' : '0.75rem',
+                    px: isMobile ? 1 : 1.5,
+                    py: isMobile ? 0.25 : 0.5,
+                    minWidth: isMobile ? 'auto' : '60px'
+                  }
+                }}
               >
-                7d
-              </Button>
+                <Button
+                  onClick={() => handleTimeRangeChange('7')}
+                  variant={timeRangeState === '7' ? 'contained' : 'outlined'}
+                  size={isMobile ? 'small' : 'medium'}
+                >
+                  7d
+                </Button>
+                <Button
+                  onClick={() => handleTimeRangeChange('30')}
+                  variant={timeRangeState === '30' ? 'contained' : 'outlined'}
+                  size={isMobile ? 'small' : 'medium'}
+                >
+                  30d
+                </Button>
+                <Button
+                  onClick={() => handleTimeRangeChange('365')}
+                  variant={timeRangeState === '365' ? 'contained' : 'outlined'}
+                  size={isMobile ? 'small' : 'medium'}
+                >
+                  1y
+                </Button>
+                <Button
+                  onClick={() => handleTimeRangeChange('all')}
+                  variant={timeRangeState === 'all' ? 'contained' : 'outlined'}
+                  size={isMobile ? 'small' : 'medium'}
+                >
+                  All
+                </Button>
+              </ButtonGroup>
+
               <Button
-                onClick={() => handleTimeRangeChange('30')}
-                variant={timeRangeState === '30' ? 'contained' : 'outlined'}
+                onClick={() => setShowReport(true)}
+                variant="outlined"
                 size={isMobile ? 'small' : 'medium'}
+                startIcon={<PdfIcon />}
+                sx={{
+                  borderColor: theme.palette.primary.main,
+                  color: theme.palette.primary.main,
+                  '&:hover': {
+                    borderColor: theme.palette.primary.dark,
+                    backgroundColor: theme.palette.primary.light + '20'
+                  }
+                }}
               >
-                30d
+                View Report
               </Button>
-              <Button
-                onClick={() => handleTimeRangeChange('365')}
-                variant={timeRangeState === '365' ? 'contained' : 'outlined'}
-                size={isMobile ? 'small' : 'medium'}
-              >
-                1y
-              </Button>
-              <Button
-                onClick={() => handleTimeRangeChange('all')}
-                variant={timeRangeState === 'all' ? 'contained' : 'outlined'}
-                size={isMobile ? 'small' : 'medium'}
-              >
-                All
-              </Button>
-            </ButtonGroup>
+            </Box>
 
             {/* Insufficient data message */}
             {insufficientDataMessage && (
@@ -367,6 +397,14 @@ const BloodPressure = () => {
           unit="mmHg"
         />
       </Box>
+
+      {/* BP Report Dialog */}
+      {showReport && (
+        <BPReport
+          bpLogs={filteredBPLogs}
+          onClose={() => setShowReport(false)}
+        />
+      )}
     </Box>
   );
 };

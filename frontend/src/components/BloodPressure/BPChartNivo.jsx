@@ -13,6 +13,55 @@ const BPChartNivo = ({ data, unit = 'mmHg' }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
+  // Smart algorithm to determine optimal tick frequency
+  const getOptimalTickValues = (dataPoints) => {
+    if (!dataPoints || dataPoints.length === 0) return [];
+
+    const totalPoints = dataPoints.length;
+    const firstDate = new Date(dataPoints[0].fullDate);
+    const lastDate = new Date(dataPoints[dataPoints.length - 1].fullDate);
+    const daysSpan = Math.ceil((lastDate - firstDate) / (1000 * 60 * 60 * 24));
+
+    // Determine optimal number of labels based on time span and data density
+    let optimalLabels;
+
+    if (daysSpan <= 7) {
+      // Week or less: show all points (up to 7)
+      optimalLabels = Math.min(totalPoints, 7);
+    } else if (daysSpan <= 30) {
+      // Month: show every 3-5 days
+      optimalLabels = Math.min(Math.ceil(totalPoints / 3), 10);
+    } else if (daysSpan <= 90) {
+      // Quarter: show every 7-10 days
+      optimalLabels = Math.min(Math.ceil(totalPoints / 5), 12);
+    } else if (daysSpan <= 365) {
+      // Year: show every 2-4 weeks
+      optimalLabels = Math.min(Math.ceil(totalPoints / 10), 15);
+    } else {
+      // More than a year: show monthly or quarterly
+      optimalLabels = Math.min(Math.ceil(totalPoints / 20), 20);
+    }
+
+    // Ensure we have at least 2 labels and at most totalPoints
+    optimalLabels = Math.max(2, Math.min(optimalLabels, totalPoints));
+
+    // Calculate step size to distribute labels evenly
+    const step = Math.max(1, Math.floor(totalPoints / optimalLabels));
+
+    // Generate tick values
+    const tickValues = [];
+    for (let i = 0; i < totalPoints; i += step) {
+      tickValues.push(dataPoints[i].date);
+    }
+
+    // Always include the last point if it's not already included
+    if (tickValues.length > 0 && tickValues[tickValues.length - 1] !== dataPoints[dataPoints.length - 1].date) {
+      tickValues.push(dataPoints[dataPoints.length - 1].date);
+    }
+
+    return tickValues;
+  };
+
   // Transform data for Nivo
   const chartData = useMemo(() => {
     if (!data || data.length === 0) return [];
@@ -69,6 +118,23 @@ const BPChartNivo = ({ data, unit = 'mmHg' }) => {
     return result;
   }, [data, theme.palette]);
 
+  // Get optimal tick values
+  const optimalTickValues = useMemo(() => {
+    if (!data || data.length === 0) return [];
+
+    const sortedData = [...data]
+      .sort((a, b) => new Date(a.log_date) - new Date(b.log_date))
+      .map(item => ({
+        date: new Date(item.log_date).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric'
+        }),
+        fullDate: item.log_date
+      }));
+
+    return getOptimalTickValues(sortedData);
+  }, [data]);
+
   if (chartData.length === 0) {
     return (
       <Card sx={{
@@ -104,7 +170,7 @@ const BPChartNivo = ({ data, unit = 'mmHg' }) => {
       border: 'none'
     }}>
       <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-        <Box sx={{ height: isMobile ? 250 : 300 }}>
+        <Box sx={{ height: isMobile ? 200 : 220 }}>
           <ResponsiveLine
             data={chartData}
             margin={{ top: 20, right: 30, left: 50, bottom: 50 }}
@@ -121,7 +187,7 @@ const BPChartNivo = ({ data, unit = 'mmHg' }) => {
               tickSize: 5,
               tickPadding: 5,
               tickRotation: isMobile ? -30 : 0,
-              tickValues: chartData[0]?.data?.filter((_, index) => index % 7 === 0).map(d => d.x) || []
+              tickValues: optimalTickValues
             }}
             axisLeft={{
               tickSize: 5,

@@ -29,7 +29,6 @@ import { goalsService } from '../services/goalsService.js';
 import { streakService } from '../services/streakService.js';
 import {
   MetricCard,
-  QuickActionCard,
   DashboardHeader,
   NutritionSummaryCard
 } from '../components/Dashboard';
@@ -169,7 +168,7 @@ const Dashboard = () => {
       pb: { xs: 8, sm: 2 }
     }}>
       {/* Header */}
-      <DashboardHeader />
+      <DashboardHeader onQuickAction={handleQuickAction} />
 
       {error && (
         <Box sx={{ px: { xs: 3, sm: 4 }, mb: 3 }}>
@@ -178,36 +177,6 @@ const Dashboard = () => {
           </Alert>
         </Box>
       )}
-
-      {/* Quick Actions */}
-      <Box sx={{ px: { xs: 3, sm: 4 }, mb: 4 }}>
-        <Grid container spacing={2} justifyContent="center">
-          <Grid xs={4}>
-            <QuickActionCard
-              title="Log Food"
-              icon={<FoodIcon />}
-              color="success"
-              onClick={() => handleQuickAction('food')}
-            />
-          </Grid>
-          <Grid xs={4}>
-            <QuickActionCard
-              title="Log Weight"
-              icon={<WeightIcon />}
-              color="info"
-              onClick={() => handleQuickAction('weight')}
-            />
-          </Grid>
-          <Grid xs={4}>
-            <QuickActionCard
-              title="Log BP"
-              icon={<BPIcon />}
-              color="error"
-              onClick={() => handleQuickAction('bp')}
-            />
-          </Grid>
-        </Grid>
-      </Box>
 
       {/* Main Content */}
       <Box sx={{ px: { xs: 1, sm: 2 } }}>

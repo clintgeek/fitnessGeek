@@ -53,15 +53,31 @@ const WeightContent = ({
     return 'all';
   };
 
-  const [timeRangeState, setTimeRangeState] = useState(() => getBestTimeRange(weightLogs));
+  // Check if goal time range should be available
+  const isGoalTimeRangeAvailable = weightGoal && weightGoal.enabled && weightGoal.startDate;
+
+  const [timeRangeState, setTimeRangeState] = useState(() => {
+    // If goal is available, default to goal regardless of data points
+    if (isGoalTimeRangeAvailable) {
+      return 'goal';
+    }
+
+    return getBestTimeRange(weightLogs);
+  });
 
   // Update time range when data loads
   React.useEffect(() => {
     if (weightLogs.length > 0) {
+      // If goal is available, default to goal regardless of data points
+      if (isGoalTimeRangeAvailable) {
+        setTimeRangeState('goal');
+        return;
+      }
+
       const bestRange = getBestTimeRange(weightLogs);
       setTimeRangeState(bestRange);
     }
-  }, [weightLogs]);
+  }, [weightLogs, isGoalTimeRangeAvailable, weightGoal]);
 
   // Filter data based on selected time range
   const filteredWeightLogs = useMemo(() => {
@@ -70,6 +86,24 @@ const WeightContent = ({
     const sortedData = [...weightLogs].sort((a, b) => new Date(b.log_date) - new Date(a.log_date));
     const mostRecentDate = new Date(sortedData[0].log_date);
 
+    // Handle goal time range
+    if (timeRangeState === 'goal' && weightGoal && weightGoal.enabled && weightGoal.startDate) {
+      const goalStartDate = new Date(weightGoal.startDate);
+      const goalEndDate = weightGoal.goalDate ? new Date(weightGoal.goalDate) : new Date();
+      const today = new Date();
+
+      // Use the earlier of goal end date or today
+      const endDate = goalEndDate < today ? goalEndDate : today;
+
+      return weightLogs
+        .filter(item => {
+          const logDate = new Date(item.log_date);
+          return logDate >= goalStartDate && logDate <= endDate;
+        })
+        .sort((a, b) => new Date(a.log_date) - new Date(b.log_date));
+    }
+
+    // Handle other time ranges
     const ranges = {
       '7': 7,
       '30': 30,
@@ -89,7 +123,7 @@ const WeightContent = ({
       .sort((a, b) => new Date(a.log_date) - new Date(b.log_date));
 
     return filtered;
-  }, [weightLogs, timeRangeState]);
+  }, [weightLogs, timeRangeState, weightGoal]);
 
   const handleTimeRangeChange = (newRange) => {
     setTimeRangeState(newRange);
@@ -97,17 +131,28 @@ const WeightContent = ({
 
   // Auto-switch to better range if current range has insufficient data
   React.useEffect(() => {
+    // Don't auto-switch if we're in goal mode - goal should always be available
+    if (timeRangeState === 'goal') {
+      return;
+    }
+
     if (filteredWeightLogs.length < 2 && filteredWeightLogs.length > 0) {
+      // First check if goal range would work
+      if (isGoalTimeRangeAvailable && timeRangeState !== 'goal') {
+        setTimeRangeState('goal');
+        return;
+      }
+
       const betterRange = getBestTimeRange(weightLogs);
       if (betterRange !== timeRangeState) {
         setTimeRangeState(betterRange);
       }
     }
-  }, [weightLogs, timeRangeState, filteredWeightLogs.length]);
+  }, [weightLogs, timeRangeState, filteredWeightLogs.length, isGoalTimeRangeAvailable, weightGoal]);
 
   // Check if we have enough data points for the selected range
-  const hasEnoughData = filteredWeightLogs.length >= 2;
-  const insufficientDataMessage = !hasEnoughData && filteredWeightLogs.length > 0 ?
+  const hasEnoughData = timeRangeState === 'goal' ? true : filteredWeightLogs.length >= 2;
+  const insufficientDataMessage = !hasEnoughData && filteredWeightLogs.length > 0 && timeRangeState !== 'goal' ?
     `Only ${filteredWeightLogs.length} data point${filteredWeightLogs.length === 1 ? '' : 's'} in this range. Try a larger time range.` : null;
 
   return (
@@ -175,6 +220,15 @@ const WeightContent = ({
             >
               All
             </Button>
+            {isGoalTimeRangeAvailable && (
+              <Button
+                onClick={() => handleTimeRangeChange('goal')}
+                variant={timeRangeState === 'goal' ? 'contained' : 'outlined'}
+                size={isMobile ? 'small' : 'medium'}
+              >
+                Goal
+              </Button>
+            )}
           </ButtonGroup>
 
           {/* Insufficient data message */}
@@ -197,7 +251,7 @@ const WeightContent = ({
           <WeightChartNivo
             data={filteredWeightLogs}
             yAxisLabel={`Weight (${unit})`}
-            goalLine={Boolean(weightGoal && weightGoal.enabled)}
+            goalLine={Boolean(weightGoal && weightGoal.enabled && timeRangeState === 'goal')}
             startWeight={weightGoal?.startWeight}
             targetWeight={weightGoal?.targetWeight}
             startDate={weightGoal?.startDate}
