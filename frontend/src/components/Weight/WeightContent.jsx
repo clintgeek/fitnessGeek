@@ -90,15 +90,11 @@ const WeightContent = ({
     if (timeRangeState === 'goal' && weightGoal && weightGoal.enabled && weightGoal.startDate) {
       const goalStartDate = new Date(weightGoal.startDate);
       const goalEndDate = weightGoal.goalDate ? new Date(weightGoal.goalDate) : new Date();
-      const today = new Date();
-
-      // Use the earlier of goal end date or today
-      const endDate = goalEndDate < today ? goalEndDate : today;
 
       return weightLogs
         .filter(item => {
           const logDate = new Date(item.log_date);
-          return logDate >= goalStartDate && logDate <= endDate;
+          return logDate >= goalStartDate && logDate <= goalEndDate;
         })
         .sort((a, b) => new Date(a.log_date) - new Date(b.log_date));
     }

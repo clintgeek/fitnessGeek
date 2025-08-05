@@ -17,17 +17,29 @@ const WeightChartNivo = ({ data, goalLine, startWeight, targetWeight, startDate,
   const chartData = useMemo(() => {
     if (!data || data.length === 0) return [];
 
+    console.log('Chart data input:', { dataLength: data.length, data: data.slice(0, 3) }); // Debug
+
     // Sort data by date
     const sortedData = [...data]
       .sort((a, b) => new Date(a.log_date) - new Date(b.log_date))
       .map(item => ({
-        date: new Date(item.log_date).toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric'
-        }),
+        date: goalLine && startDate && goalDate ?
+          new Date(item.log_date) :
+          new Date(item.log_date).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric'
+          }),
         value: parseFloat(item.weight_value),
         fullDate: item.log_date
       }));
+
+    console.log('Processed data:', {
+      goalLine,
+      startDate,
+      goalDate,
+      sortedDataLength: sortedData.length,
+      firstFew: sortedData.slice(0, 3)
+    }); // Debug
 
     const result = [
       {
@@ -40,36 +52,35 @@ const WeightChartNivo = ({ data, goalLine, startWeight, targetWeight, startDate,
       }
     ];
 
+    console.log('Chart result:', {
+      resultLength: result.length,
+      weightDataLength: result[0]?.data?.length,
+      weightData: result[0]?.data?.slice(0, 3)
+    }); // Debug
+
     // Add goal line if available
     if (goalLine && startWeight && targetWeight && startDate && goalDate) {
+      console.log('Adding goal line:', { startWeight, targetWeight, startDate, goalDate }); // Debug
+
       const firstDate = new Date(startDate);
       const goalDateObj = new Date(goalDate);
-      goalDateObj.setHours(0, 0, 0, 0);
 
       // Create goal line data points that span the entire goal period
       const goalStartDate = new Date(firstDate);
       const goalEndDate = new Date(goalDateObj);
 
-      // Format dates for the chart
-      const startDateFormatted = goalStartDate.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric'
-      });
-      const endDateFormatted = goalEndDate.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric'
-      });
-
       const goalData = [
         {
-          x: startDateFormatted,
+          x: goalStartDate,
           y: parseFloat(startWeight)
         },
         {
-          x: endDateFormatted,
+          x: goalEndDate,
           y: parseFloat(targetWeight)
         }
       ];
+
+      console.log('Goal data:', goalData); // Debug
 
       result.push({
         id: 'goal',
@@ -78,92 +89,12 @@ const WeightChartNivo = ({ data, goalLine, startWeight, targetWeight, startDate,
       });
     }
 
+    console.log('Final chart data:', result); // Debug
+
     return result;
   }, [data, goalLine, startWeight, targetWeight, startDate, goalDate, theme.palette]);
 
-  // Generate appropriate date labels for the goal period
-  const getGoalDateLabels = () => {
-    if (!goalLine || !startDate || !goalDate) return [];
 
-    console.log('Goal dates:', { startDate, goalDate }); // Debug
-
-    // Parse dates - they're already in ISO format
-    const start = new Date(startDate);
-    const end = new Date(goalDate);
-
-    if (!start || !end) return [];
-
-    console.log('Parsed dates:', {
-      start: start.toISOString(),
-      end: end.toISOString(),
-      startFormatted: start.toLocaleDateString('en-US'),
-      endFormatted: end.toLocaleDateString('en-US')
-    }); // Debug
-
-    // Instead of generating labels for the entire goal period,
-    // let's use the actual data range to determine the chart axis
-    const dataDates = data.map(item => new Date(item.log_date)).sort((a, b) => a - b);
-    const dataStart = dataDates[0];
-    const dataEnd = dataDates[dataDates.length - 1];
-
-    console.log('Data date range:', {
-      dataStart: dataStart?.toISOString(),
-      dataEnd: dataEnd?.toISOString()
-    }); // Debug
-
-    // Use the actual data range for the chart axis
-    const chartStart = dataStart || start;
-    const chartEnd = dataEnd || end;
-
-    const totalDays = Math.ceil((chartEnd - chartStart) / (1000 * 60 * 60 * 24));
-
-    console.log('Chart date range:', {
-      chartStart: chartStart.toISOString(),
-      chartEnd: chartEnd.toISOString(),
-      totalDays
-    }); // Debug
-
-    // Determine appropriate number of labels based on chart duration
-    let labelCount;
-    if (totalDays <= 7) {
-      labelCount = totalDays; // Show every day for short periods
-    } else if (totalDays <= 30) {
-      labelCount = Math.min(10, totalDays); // Up to 10 labels for month-long periods
-    } else if (totalDays <= 90) {
-      labelCount = Math.min(15, totalDays); // Up to 15 labels for quarter-long periods
-    } else {
-      labelCount = Math.min(20, totalDays); // Up to 20 labels for longer periods
-    }
-
-    const labels = [];
-    const step = Math.max(1, Math.floor(totalDays / labelCount));
-
-    console.log('Label generation:', { totalDays, labelCount, step }); // Debug
-
-    for (let i = 0; i <= totalDays; i += step) {
-      const date = new Date(chartStart);
-      date.setDate(chartStart.getDate() + i);
-      const label = date.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric'
-      });
-      labels.push(label);
-      console.log(`Generated label ${i}:`, { date: date.toISOString(), label }); // Debug
-    }
-
-    // Always include the end date
-    const endFormatted = chartEnd.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric'
-    });
-    if (!labels.includes(endFormatted)) {
-      labels.push(endFormatted);
-      console.log('Added end date label:', endFormatted); // Debug
-    }
-
-    console.log('All generated labels:', labels); // Debug
-    return labels;
-  };
 
   if (chartData.length === 0) {
     return (
@@ -205,9 +136,12 @@ const WeightChartNivo = ({ data, goalLine, startWeight, targetWeight, startDate,
             data={chartData}
             margin={{ top: 20, right: 30, left: 70, bottom: 50 }}
             xScale={{
-              type: 'point',
+              type: goalLine && startDate && goalDate ? 'time' : 'point',
               ...(goalLine && startDate && goalDate ? {
-                domain: getGoalDateLabels()
+                format: '%b %d',
+                useUTC: false,
+                min: new Date(startDate),
+                max: new Date(goalDate)
               } : {})
             }}
             yScale={{
@@ -222,7 +156,40 @@ const WeightChartNivo = ({ data, goalLine, startWeight, targetWeight, startDate,
               tickSize: 5,
               tickPadding: 5,
               tickRotation: isMobile ? -45 : 0,
-              tickValues: getGoalDateLabels()
+              ...(goalLine && startDate && goalDate ? {
+                format: '%b %d'
+              } : {
+                // Limit labels for different time ranges to prevent overlap
+                tickValues: (() => {
+                  if (!data || data.length === 0) return undefined;
+
+                  const sortedData = [...data].sort((a, b) => new Date(a.log_date) - new Date(b.log_date));
+                  const startDate = new Date(sortedData[0].log_date);
+                  const endDate = new Date(sortedData[sortedData.length - 1].log_date);
+                  const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+
+                  // Determine how many labels to show based on time range
+                  let maxLabels;
+                  if (daysDiff <= 7) {
+                    maxLabels = daysDiff; // Show all days for week view
+                  } else if (daysDiff <= 30) {
+                    maxLabels = 7; // Show ~weekly labels for month view
+                  } else if (daysDiff <= 90) {
+                    maxLabels = 6; // Show ~bi-weekly labels for quarter view
+                  } else {
+                    maxLabels = 8; // Show ~monthly labels for year+ view
+                  }
+
+                  const step = Math.max(1, Math.floor(data.length / maxLabels));
+                  return data
+                    .sort((a, b) => new Date(a.log_date) - new Date(b.log_date))
+                    .filter((_, index) => index % step === 0 || index === data.length - 1)
+                    .map(item => new Date(item.log_date).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric'
+                    }));
+                })()
+              })
             }}
             axisLeft={{
               tickSize: 5,
@@ -234,7 +201,7 @@ const WeightChartNivo = ({ data, goalLine, startWeight, targetWeight, startDate,
             }}
             enableGridX={true}
             enableGridY={true}
-            gridXValues={goalLine ? getGoalDateLabels() : (chartData[0]?.data?.map(d => d.x) || [])}
+            gridXValues={5}
             gridYValues={5}
             colors={chartData.map(serie => serie.color)}
             lineWidth={isMobile ? 2 : 3}
