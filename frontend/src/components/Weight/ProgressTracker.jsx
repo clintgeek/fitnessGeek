@@ -51,11 +51,21 @@ const ProgressTracker = ({
     const elapsedDays = (current - start) / (1000 * 60 * 60 * 24);
     const percentage = Math.min(Math.max((elapsedDays / totalDays) * 100, 0), 100);
 
+    // Calculate expected weight at current time
+    const totalWeightChange = targetValue - startValue;
+    const expectedWeight = startValue + (totalWeightChange * (elapsedDays / totalDays));
+
+    // Calculate difference from expected weight
+    const weightDifference = currentValue - expectedWeight;
+
+    // Determine status based on weight difference
     let status = 'on-track';
-    if (elapsedDays > totalDays) {
-      status = 'behind';
-    } else if (percentage < 50 && elapsedDays > totalDays * 0.5) {
-      status = 'ahead';
+    if (weightDifference > 5) {
+      status = 'behind'; // More than 5 lbs above target = behind
+    } else if (weightDifference < -5) {
+      status = 'ahead'; // More than 5 lbs below target = ahead
+    } else {
+      status = 'on-track'; // Within 5 lbs of target = on track
     }
 
     return { percentage, status };

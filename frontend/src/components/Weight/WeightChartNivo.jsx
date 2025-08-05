@@ -17,29 +17,27 @@ const WeightChartNivo = ({ data, goalLine, startWeight, targetWeight, startDate,
   const chartData = useMemo(() => {
     if (!data || data.length === 0) return [];
 
-    console.log('Chart data input:', { dataLength: data.length, data: data.slice(0, 3) }); // Debug
-
     // Sort data by date
     const sortedData = [...data]
       .sort((a, b) => new Date(a.log_date) - new Date(b.log_date))
-      .map(item => ({
-        date: goalLine && startDate && goalDate ?
-          new Date(item.log_date) :
-          new Date(item.log_date).toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric'
-          }),
-        value: parseFloat(item.weight_value),
-        fullDate: item.log_date
-      }));
-
-    console.log('Processed data:', {
-      goalLine,
-      startDate,
-      goalDate,
-      sortedDataLength: sortedData.length,
-      firstFew: sortedData.slice(0, 3)
-    }); // Debug
+      .map(item => {
+        try {
+          return {
+            date: goalLine && startDate && goalDate ?
+              new Date(item.log_date) :
+              new Date(item.log_date).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric'
+              }),
+            value: parseFloat(item.weight_value) || 0,
+            fullDate: item.log_date
+          };
+        } catch (error) {
+          console.error('Error processing weight data item:', item, error);
+          return null;
+        }
+      })
+      .filter(item => item !== null);
 
     const result = [
       {
@@ -52,44 +50,36 @@ const WeightChartNivo = ({ data, goalLine, startWeight, targetWeight, startDate,
       }
     ];
 
-    console.log('Chart result:', {
-      resultLength: result.length,
-      weightDataLength: result[0]?.data?.length,
-      weightData: result[0]?.data?.slice(0, 3)
-    }); // Debug
-
     // Add goal line if available
     if (goalLine && startWeight && targetWeight && startDate && goalDate) {
-      console.log('Adding goal line:', { startWeight, targetWeight, startDate, goalDate }); // Debug
+      try {
+        const firstDate = new Date(startDate);
+        const goalDateObj = new Date(goalDate);
 
-      const firstDate = new Date(startDate);
-      const goalDateObj = new Date(goalDate);
+        // Create goal line data points that span the entire goal period
+        const goalStartDate = new Date(firstDate);
+        const goalEndDate = new Date(goalDateObj);
 
-      // Create goal line data points that span the entire goal period
-      const goalStartDate = new Date(firstDate);
-      const goalEndDate = new Date(goalDateObj);
+        const goalData = [
+          {
+            x: goalStartDate,
+            y: parseFloat(startWeight) || 0
+          },
+          {
+            x: goalEndDate,
+            y: parseFloat(targetWeight) || 0
+          }
+        ];
 
-      const goalData = [
-        {
-          x: goalStartDate,
-          y: parseFloat(startWeight)
-        },
-        {
-          x: goalEndDate,
-          y: parseFloat(targetWeight)
-        }
-      ];
-
-      console.log('Goal data:', goalData); // Debug
-
-      result.push({
-        id: 'goal',
-        color: theme.palette.secondary.main,
-        data: goalData
-      });
+        result.push({
+          id: 'goal',
+          color: theme.palette.secondary.main,
+          data: goalData
+        });
+      } catch (error) {
+        console.error('Error creating goal line:', error);
+      }
     }
-
-    console.log('Final chart data:', result); // Debug
 
     return result;
   }, [data, goalLine, startWeight, targetWeight, startDate, goalDate, theme.palette]);
@@ -218,6 +208,18 @@ const WeightChartNivo = ({ data, goalLine, startWeight, targetWeight, startDate,
               const weightPoint = chartData.find(serie => serie.id === 'weight')?.data.find(d => d.x === point.data.x);
               const goalPoint = chartData.find(serie => serie.id === 'goal')?.data.find(d => d.x === point.data.x);
 
+              // Format the date properly
+              const formatDate = (dateValue) => {
+                if (dateValue instanceof Date) {
+                  return dateValue.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                  });
+                }
+                return dateValue || 'Unknown Date';
+              };
+
               return (
                 <div style={{
                   backgroundColor: theme.palette.background.paper,
@@ -230,7 +232,7 @@ const WeightChartNivo = ({ data, goalLine, startWeight, targetWeight, startDate,
                   fontSize: '12px'
                 }}>
                   <div style={{ fontWeight: 600, marginBottom: 4 }}>
-                    {point?.data?.x || 'Unknown Date'}
+                    {formatDate(point?.data?.x)}
                   </div>
                   {weightPoint && (
                     <div style={{ color: theme.palette.primary.main, fontWeight: 500, marginBottom: 2 }}>
