@@ -13,13 +13,16 @@ import Register from './pages/Register.jsx';
 import FoodSearch from './pages/FoodSearch.jsx';
 import FoodLog from './pages/FoodLog.jsx';
 import MyFoods from './pages/MyFoods.jsx';
+import MyMeals from './pages/MyMeals.jsx';
 import Recipes from './pages/Recipes.jsx';
 import Weight from './pages/Weight.jsx';
 import BloodPressure from './pages/BloodPressure.jsx';
 import Profile from './pages/Profile.jsx';
 import Settings from './pages/Settings.jsx';
-import Goals from './pages/Goals.jsx';
+// Removed legacy Goals page
 import BarcodeTest from './pages/BarcodeTest.jsx';
+import AIGoalPlanner from './components/FitnessGoals/AIGoalPlanner.jsx';
+import AITest from './pages/AITest.jsx';
 
 // Import contexts
 import { AuthProvider } from './contexts/AuthContext.jsx';
@@ -52,10 +55,13 @@ function App() {
                   <Route path="food-search" element={<FoodSearch />} />
                   <Route path="food-log" element={<FoodLog />} />
                   <Route path="my-foods" element={<MyFoods />} />
+                  <Route path="my-meals" element={<MyMeals />} />
                   <Route path="recipes" element={<Recipes />} />
                   <Route path="weight" element={<Weight />} />
                   <Route path="blood-pressure" element={<BloodPressure />} />
-                  <Route path="goals" element={<Goals />} />
+                  {/* Legacy goals route removed */}
+                  <Route path="calorie-wizard" element={<AIGoalPlanner />} />
+                  <Route path="ai-test" element={<AITest />} />
                   <Route path="profile" element={<Profile />} />
                   <Route path="settings" element={<Settings />} />
                   <Route path="barcode-test" element={<BarcodeTest />} />

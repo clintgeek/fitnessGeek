@@ -61,6 +61,7 @@ app.use('/api/weight', require('./routes/weightRoutes'));
 app.use('/api/blood-pressure', require('./routes/bloodPressureRoutes'));
 app.use('/api/settings', require('./routes/settingsRoutes'));
 app.use('/api/streaks', require('./routes/streakRoutes'));
+app.use('/api/ai', require('./routes/aiRoutes'));
 
 // 404 handler
 app.use('*', (req, res) => {
@@ -92,6 +93,7 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 FitnessGeek API server running on port ${PORT}`);
   console.log(`📊 Health check available at http://localhost:${PORT}/health`);
   console.log(`🔗 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🤖 AI features enabled`);
 });
 
 module.exports = app;

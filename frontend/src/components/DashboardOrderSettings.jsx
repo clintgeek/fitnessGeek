@@ -8,7 +8,8 @@ import {
   FormControlLabel,
   Paper,
   IconButton,
-  Alert
+  Alert,
+  CircularProgress
 } from '@mui/material';
 import {
   DndContext,
@@ -29,13 +30,20 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
+  Restaurant as FoodIcon,
   MonitorWeight as WeightIcon,
   MonitorHeart as BPIcon,
-  Restaurant as FoodIcon,
+  TrendingUp as TrendingIcon,
+  TrendingDown as TrendingDownIcon,
   LocalFireDepartment as StreakIcon,
-  RestaurantMenu as NutritionIcon,
+  CheckCircle as CheckIcon,
+  Warning as WarningIcon,
+  Error as ErrorIcon,
+  Info as InfoIcon,
+  Restaurant as NutritionIcon,
   FlashOn as QuickActionsIcon,
-  DragIndicator as DragIndicatorIcon
+  DragIndicator as DragIndicatorIcon,
+  Restaurant as ForkKnifeIcon
 } from '@mui/icons-material';
 
 // Sortable item component
@@ -143,66 +151,57 @@ const DashboardOrderSettings = ({ settings, onSettingsChange, onOrderChange }) =
     })
   );
 
-  // Card configuration with icons and labels
-  const cardConfig = {
+  // If settings is null, show loading
+  if (!settings) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  // Card configurations
+  const cardConfigs = {
+    calories_today: {
+      icon: <ForkKnifeIcon />,
+      label: 'Calories Today',
+      description: 'Show today\'s calorie intake'
+    },
     current_weight: {
       icon: <WeightIcon />,
-      label: 'Current Weight',
-      description: 'Show current weight and progress'
+      label: 'Weight Progress',
+      description: 'Show weekly weight change'
     },
     blood_pressure: {
       icon: <BPIcon />,
       label: 'Blood Pressure',
-      description: 'Show latest BP reading and status'
-    },
-    calories_today: {
-      icon: <FoodIcon />,
-      label: 'Calories Today',
-      description: 'Show today\'s calorie intake'
+      description: 'Show latest BP reading'
     },
     login_streak: {
       icon: <StreakIcon />,
       label: 'Login Streak',
-      description: 'Show consecutive login days'
+      description: 'Show current login streak'
     },
     nutrition_today: {
-      icon: <NutritionIcon />,
-      label: 'Nutrition Today',
-      description: 'Show macro breakdown'
-    },
-    quick_actions: {
-      icon: <QuickActionsIcon />,
-      label: 'Quick Actions',
-      description: 'Show quick action buttons'
-    },
-    weight_goal: {
-      icon: <WeightIcon />,
-      label: 'Weight Goal',
-      description: 'Show weight goal progress'
-    },
-    nutrition_goal: {
       icon: <FoodIcon />,
-      label: 'Nutrition Goal',
-      description: 'Show nutrition goal targets'
+      label: 'Nutrition Summary',
+      description: 'Show today\'s nutrition breakdown'
     }
   };
 
   // Get visible cards based on settings
   const getVisibleCards = () => {
-    const cardOrder = settings.card_order || [
+    const cardOrder = settings?.card_order || [
+      'calories_today',
       'current_weight',
       'blood_pressure',
-      'calories_today',
       'login_streak',
-      'nutrition_today',
-      'quick_actions',
-      'weight_goal',
-      'nutrition_goal'
+      'nutrition_today'
     ];
 
     return cardOrder.filter(cardKey => {
       const settingKey = `show_${cardKey}`;
-      return settings[settingKey];
+      return settings?.[settingKey] && cardConfigs[cardKey]; // Only include if card exists in config
     });
   };
 
@@ -217,20 +216,17 @@ const DashboardOrderSettings = ({ settings, onSettingsChange, onOrderChange }) =
       const reorderedCards = arrayMove(visibleCards, oldIndex, newIndex);
 
       // Update the full card order while preserving hidden cards
-      const cardOrder = settings.card_order || [
+      const cardOrder = settings?.card_order || [
+        'calories_today',
         'current_weight',
         'blood_pressure',
-        'calories_today',
         'login_streak',
-        'nutrition_today',
-        'quick_actions',
-        'weight_goal',
-        'nutrition_goal'
+        'nutrition_today'
       ];
 
       const hiddenCards = cardOrder.filter(cardKey => {
         const settingKey = `show_${cardKey}`;
-        return !settings[settingKey];
+        return !settings?.[settingKey];
       });
 
       // Rebuild the order with visible cards in new order + hidden cards at the end
@@ -250,7 +246,7 @@ const DashboardOrderSettings = ({ settings, onSettingsChange, onOrderChange }) =
   // Debug logging
   console.log('DashboardOrderSettings - settings:', settings);
   console.log('DashboardOrderSettings - visibleCards:', visibleCards);
-  console.log('DashboardOrderSettings - card_order:', settings.card_order);
+  console.log('DashboardOrderSettings - card_order:', settings?.card_order);
 
   return (
     <Box>
@@ -262,7 +258,7 @@ const DashboardOrderSettings = ({ settings, onSettingsChange, onOrderChange }) =
         Drag and drop cards to reorder them on your dashboard. Toggle switches to show/hide cards.
       </Typography>
 
-      {!settings.card_order && (
+      {!settings?.card_order && (
         <Alert severity="warning" sx={{ mb: 2 }}>
           No card order found. Using default order.
         </Alert>
@@ -282,7 +278,7 @@ const DashboardOrderSettings = ({ settings, onSettingsChange, onOrderChange }) =
               <SortableItem
                 key={cardKey}
                 cardKey={cardKey}
-                cardConfig={cardConfig}
+                cardConfig={cardConfigs}
                 settings={settings}
                 onToggleCard={handleToggleCard}
               />
@@ -292,18 +288,18 @@ const DashboardOrderSettings = ({ settings, onSettingsChange, onOrderChange }) =
       </DndContext>
 
       {/* Hidden Cards Section */}
-      {(settings.card_order || []).some(cardKey => {
+      {(settings?.card_order || []).some(cardKey => {
         const settingKey = `show_${cardKey}`;
-        return !settings[settingKey];
+        return !settings?.[settingKey];
       }) && (
         <Box>
           <Typography variant="subtitle2" sx={{ mb: 2, color: 'text.secondary' }}>
             Hidden Cards
           </Typography>
-          {(settings.card_order || [])
+          {(settings?.card_order || [])
             .filter(cardKey => {
               const settingKey = `show_${cardKey}`;
-              return !settings[settingKey];
+              return !settings?.[settingKey] && cardConfigs[cardKey]; // Only show if card exists in config
             })
             .map((cardKey) => (
               <Paper
@@ -323,14 +319,14 @@ const DashboardOrderSettings = ({ settings, onSettingsChange, onOrderChange }) =
               >
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                   <Box sx={{ mr: 1, color: '#999' }}>
-                    {cardConfig[cardKey].icon}
+                    {cardConfigs[cardKey]?.icon}
                   </Box>
                   <Box>
                     <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary' }}>
-                      {cardConfig[cardKey].label}
+                      {cardConfigs[cardKey]?.label || cardKey}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      {cardConfig[cardKey].description}
+                      {cardConfigs[cardKey]?.description || 'Card description not available'}
                     </Typography>
                   </Box>
                 </Box>
@@ -338,7 +334,7 @@ const DashboardOrderSettings = ({ settings, onSettingsChange, onOrderChange }) =
                 <FormControlLabel
                   control={
                     <Switch
-                      checked={settings[`show_${cardKey}`]}
+                      checked={settings?.[`show_${cardKey}`] || false}
                       onChange={(e) => handleToggleCard(cardKey, e.target.checked)}
                       size="small"
                     />

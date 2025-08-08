@@ -191,7 +191,10 @@ export const fitnessGeekService = {
       if (search) params.search = search;
 
       const response = await apiService.get('/meals', { params });
-      return response.data.data || response.data;
+      // apiService.get returns the response body directly.
+      // Backend typically responds with { success: true, data: [...] }.
+      // Be resilient to both shapes.
+      return (response && (response.data ?? response.data?.data)) || response.data || response;
     } catch (error) {
       console.error('Error getting meals:', error);
       throw error;
@@ -275,7 +278,9 @@ export const fitnessGeekService = {
   // Format date for API
   formatDate: (date) => {
     if (typeof date === 'string') return date;
-    return date.toISOString().split('T')[0];
+    // Format as YYYY-MM-DD in local time (avoid UTC shift)
+    const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+    return local.toISOString().split('T')[0];
   },
 
   // Get meal type display name

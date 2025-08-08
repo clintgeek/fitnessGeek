@@ -38,6 +38,19 @@ export const settingsService = {
     }
   },
 
+  // Update AI settings specifically
+  updateAISettings: async (aiSettings) => {
+    try {
+      console.log('SettingsService: Updating AI settings:', aiSettings);
+      const response = await apiService.put('/settings/ai', aiSettings);
+      console.log('SettingsService: AI update response:', response);
+      return response;
+    } catch (error) {
+      console.error('Error updating AI settings:', error);
+      throw error;
+    }
+  },
+
   // Get default dashboard settings
   getDefaultDashboardSettings: () => ({
     show_current_weight: true,
@@ -58,5 +71,16 @@ export const settingsService = {
       'weight_goal',
       'nutrition_goal'
     ]
+  }),
+
+  // Get default AI settings
+  getDefaultAISettings: () => ({
+    enabled: true,
+    features: {
+      natural_language_food_logging: true,
+      meal_suggestions: true,
+      nutrition_analysis: true,
+      goal_recommendations: true
+    }
   })
 };

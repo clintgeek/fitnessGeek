@@ -1,8 +1,15 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Box,
   Alert,
-  CircularProgress
+  CircularProgress,
+  Card,
+  CardContent,
+  Typography,
+  TextField,
+  Button,
+  Stack,
+  Collapse
 } from '@mui/material';
 import NutritionSummary from '../components/FoodLog/NutritionSummary.jsx';
 import MealSection from '../components/FoodLog/MealSection.jsx';
@@ -13,9 +20,11 @@ import {
   AddFoodDialog
 } from '../components/FoodLog';
 import { useFoodLog } from '../hooks/useFoodLog.js';
+import { fitnessGeekService } from '../services/fitnessGeekService.js';
+import { settingsService } from '../services/settingsService.js';
 
 const FoodLog = () => {
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(() => fitnessGeekService.formatDate(new Date()));
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [selectedMealType, setSelectedMealType] = useState('');
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -32,6 +41,8 @@ const FoodLog = () => {
     successMessage,
     errorMessage,
     nutritionSummary,
+    refreshGoals,
+    refreshLogs,
     getLogsByMealType,
     addFoodToLog,
     updateFoodLog,
@@ -41,15 +52,79 @@ const FoodLog = () => {
     clearErrorMessage
   } = useFoodLog(selectedDate);
 
+  // Calorie goal adjustment state
+  const todayCalorieGoal = useMemo(() => Math.round(nutritionSummary?.calorieGoal || 0), [nutritionSummary]);
+  const [goalInput, setGoalInput] = useState('');
+  const [savingGoal, setSavingGoal] = useState(false);
+  const [goalSavedMsg, setGoalSavedMsg] = useState('');
+  const [showCaloriePanel, setShowCaloriePanel] = useState(false);
+
+  useEffect(() => {
+    if (todayCalorieGoal > 0) setGoalInput(String(todayCalorieGoal));
+  }, [todayCalorieGoal]);
+
+  const getMondayFirstDayIndex = (dateStr) => {
+    const d = new Date(dateStr);
+    // JS getDay(): Sun=0..Sat=6 → Mon=0..Sun=6
+    return (d.getDay() + 6) % 7;
+  };
+
+  const handleSaveTodayGoal = async () => {
+    try {
+      if (!goalInput) return;
+      setSavingGoal(true);
+      const resp = await settingsService.getSettings();
+      const data = resp?.data || resp?.data?.data || resp;
+      const ng = data?.nutrition_goal || {};
+      const minSafe = ng?.min_safe_calories || 1200;
+      const idx = getMondayFirstDayIndex(selectedDate);
+      const base = Array.isArray(ng?.weekly_schedule) && ng.weekly_schedule.length === 7
+        ? [...ng.weekly_schedule]
+        : new Array(7).fill(ng?.daily_calorie_target || todayCalorieGoal || 0);
+      const newVal = Math.max(minSafe, Math.round(parseFloat(goalInput)) || 0);
+      base[idx] = newVal;
+
+      await settingsService.updateSettings({
+        nutrition_goal: {
+          ...ng,
+          enabled: true,
+          weekly_schedule: base
+        }
+      });
+
+      setGoalSavedMsg('Today\'s calorie target updated.');
+      setTimeout(() => setGoalSavedMsg(''), 3000);
+      await refreshGoals();
+    } catch (e) {
+      console.error('Failed to update today\'s calorie goal', e);
+    } finally {
+      setSavingGoal(false);
+    }
+  };
+
   const handleAddFood = (mealType) => {
     setSelectedMealType(mealType);
     setShowAddDialog(true);
   };
 
   const handleFoodSelect = async (food) => {
-    const success = await addFoodToLog(food, selectedMealType);
-    if (success) {
-      setShowAddDialog(false);
+    try {
+      if (food && food.type === 'meal' && food._id) {
+        // Saved meal: add entire meal to the selected meal type on the selected date
+        await fitnessGeekService.addMealToLog(food._id, selectedDate, selectedMealType || 'snack');
+        setShowAddDialog(false);
+        await refreshGoals();
+        await refreshLogs();
+        return;
+      }
+
+      const success = await addFoodToLog(food, selectedMealType);
+      if (success) {
+        setShowAddDialog(false);
+        await refreshLogs();
+      }
+    } catch (e) {
+      console.error('Failed to add selection to log', e);
     }
   };
 
@@ -98,19 +173,23 @@ const FoodLog = () => {
   };
 
   const goToPreviousDay = () => {
-    const currentDate = new Date(selectedDate);
+    const [y, m, d] = selectedDate.split('-').map(Number);
+    const currentDate = new Date(y, (m || 1) - 1, d || 1);
     currentDate.setDate(currentDate.getDate() - 1);
-    setSelectedDate(currentDate.toISOString().split('T')[0]);
+    setSelectedDate(fitnessGeekService.formatDate(currentDate));
   };
 
   const goToNextDay = () => {
-    const currentDate = new Date(selectedDate);
+    const [y, m, d] = selectedDate.split('-').map(Number);
+    const currentDate = new Date(y, (m || 1) - 1, d || 1);
     currentDate.setDate(currentDate.getDate() + 1);
-    setSelectedDate(currentDate.toISOString().split('T')[0]);
+    setSelectedDate(fitnessGeekService.formatDate(currentDate));
   };
 
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
+    // Parse YYYY-MM-DD as a local date to avoid UTC shifting the displayed day
+    const [y, m, d] = (dateString || '').split('-').map(Number);
+    const date = new Date(y || 0, (m || 1) - 1, d || 1);
     return date.toLocaleDateString('en-US', {
       weekday: 'long',
       month: 'long',
@@ -129,11 +208,55 @@ const FoodLog = () => {
         formatDate={formatDate}
       />
 
+      {/* Calorie Goal Panel (toggle) */}
+      <Collapse in={showCaloriePanel} unmountOnExit>
+        <Card id="calorie-goal-panel" sx={{ mb: 2 }}>
+          <CardContent>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ xs: 'stretch', sm: 'center' }}>
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="subtitle2" sx={{ color: '#666' }}>Calorie Goal Today</Typography>
+                <Typography variant="h6">{todayCalorieGoal || '—'} kcal</Typography>
+              </Box>
+              <TextField
+                label="Adjust today"
+                type="number"
+                size="small"
+                value={goalInput}
+                onChange={(e) => setGoalInput(e.target.value)}
+                sx={{ width: 180 }}
+              />
+              <Button
+                variant="contained"
+                onClick={handleSaveTodayGoal}
+                disabled={savingGoal || !goalInput}
+              >
+                Save
+              </Button>
+            </Stack>
+            {goalSavedMsg && (
+              <Alert severity="success" sx={{ mt: 2 }}>{goalSavedMsg}</Alert>
+            )}
+          </CardContent>
+        </Card>
+      </Collapse>
+
       {/* Nutrition Summary */}
       <Box sx={{ mb: 3 }}>
         <NutritionSummary
           summary={nutritionSummary}
           showGoals={true}
+          onCalorieSettingsClick={() => {
+            setShowCaloriePanel(prev => {
+              const next = !prev;
+              if (!prev && typeof window !== 'undefined') {
+                setTimeout(() => {
+                  const panel = document.getElementById('calorie-goal-panel');
+                  if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 0);
+              }
+              return next;
+            });
+          }}
         />
       </Box>
 

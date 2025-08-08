@@ -18,7 +18,6 @@ import {
 } from '@mui/material';
 import {
   Search as SearchIcon,
-  QrCodeScanner as BarcodeIcon,
   Close as CloseIcon,
   Add as AddIcon
 } from '@mui/icons-material';
@@ -97,11 +96,30 @@ const FoodSearch = ({
     setError(null);
 
     try {
-      const results = await fitnessGeekService.searchFoods(searchQuery, maxResults);
-      setSearchResults(results || []);
+      const [foods, meals] = await Promise.all([
+        fitnessGeekService.searchFoods(searchQuery, maxResults),
+        fitnessGeekService.getMeals(null, searchQuery)
+      ]);
+
+      const mappedMeals = (meals || []).map((m) => {
+        const totalCals = (m.food_items || []).reduce((sum, it) => {
+          const f = it.food_item_id || it.food_item || {};
+          const c = f?.nutrition?.calories_per_serving || 0;
+          return sum + (c * (it.servings || 1));
+        }, 0);
+        return {
+          _id: m._id,
+          name: m.name,
+          source: 'meal',
+          type: 'meal',
+          nutrition: { calories_per_serving: Math.round(totalCals) }
+        };
+      });
+
+      // Show saved meals first
+      setSearchResults([...(mappedMeals || []), ...(foods || [])]);
     } catch (err) {
-      console.error('Error searching foods:', err);
-      setError('Failed to search foods. Please try again.');
+      setError(err.message);
       setSearchResults([]);
     } finally {
       setLoading(false);
@@ -123,26 +141,14 @@ const FoodSearch = ({
         setRecentFoods(uniqueFoods.slice(0, 10));
       }
     } catch (err) {
-      console.error('Error loading recent foods:', err);
+      console.error('Failed to load recent foods:', err);
     }
   };
 
   const handleFoodClick = (food) => {
     if (disableDialog) {
-      // Auto-add food when clicked (for use in dialogs)
-      const foodWithServings = {
-        ...food,
-        servings: 1,
-        nutrition: food.nutrition || {
-          calories_per_serving: 0,
-          protein_grams: 0,
-          carbs_grams: 0,
-          fat_grams: 0
-        }
-      };
-      onFoodSelect(foodWithServings);
+      onFoodSelect(food);
     } else {
-      // Open dialog to edit servings
       setSelectedFood(food);
       setServings(1);
       setNutrition(food.nutrition || {
@@ -179,74 +185,55 @@ const FoodSearch = ({
   };
 
   const renderFoodItem = (food) => {
-    const sourceName = getSourceName(food.source);
-
     return (
       <ListItem
-        key={food.id || food._id || `${food.name}-${food.brand}-${food.source}`}
+        key={food._id || food.id}
+        onClick={() => handleFoodClick(food)}
         sx={{
-          px: 2,
-          py: 1.5,
+          cursor: 'pointer',
+          '&:hover': {
+            backgroundColor: '#f5f5f5'
+          },
           borderBottom: '1px solid #f0f0f0',
           '&:last-child': {
             borderBottom: 'none'
-          },
-          '&:hover': {
-            backgroundColor: '#f8f9fa'
           }
         }}
-        onClick={() => handleFoodClick(food)}
       >
         <ListItemText
           primary={
-            <Typography
-              variant="body2"
-              sx={{
-                fontWeight: 500,
-                fontSize: '0.875rem',
-                mb: 0.5
-              }}
-            >
-              {food.name}
-            </Typography>
-          }
-          secondaryTypographyProps={{
-            component: 'div'
-          }}
-          secondary={
-            <Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                  {food.name}
+                </Typography>
                 {food.brand && (
-                  <Typography variant="caption" sx={{ color: '#666' }}>
+                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.875rem' }}>
                     {food.brand}
                   </Typography>
                 )}
-                {food.brand && (
-                  <Typography variant="caption" sx={{ color: '#999' }}>
-                    •
-                  </Typography>
-                )}
-                <Typography variant="caption" sx={{ color: '#666' }}>
-                  {Math.round(food.nutrition.calories_per_serving)} cal
-                </Typography>
-                <Typography variant="caption" sx={{ color: '#999' }}>
-                  •
+              </Box>
+              <Box sx={{ textAlign: 'right', ml: 2 }}>
+                <Typography variant="body2" sx={{ color: '#4caf50', fontWeight: 600 }}>
+                  {Math.round(food.nutrition?.calories_per_serving || 0)} cal
                 </Typography>
                 <Typography variant="caption" sx={{ color: '#666' }}>
-                  {sourceName}
+                  {getSourceName(food.source)}
                 </Typography>
               </Box>
-              <Box sx={{ display: 'flex', gap: 2 }}>
-                <Typography variant="caption" sx={{ color: '#666' }}>
-                  P: {food.nutrition.protein_grams}g
-                </Typography>
-                <Typography variant="caption" sx={{ color: '#666' }}>
-                  C: {food.nutrition.carbs_grams}g
-                </Typography>
-                <Typography variant="caption" sx={{ color: '#666' }}>
-                  F: {food.nutrition.fat_grams}g
-                </Typography>
-              </Box>
+            </Box>
+          }
+          secondary={
+            <Box sx={{ display: 'flex', gap: 2, mt: 0.5 }}>
+              <Typography variant="body2" sx={{ color: '#666' }}>
+                P: {food.nutrition?.protein_grams || 0}g
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#666' }}>
+                C: {food.nutrition?.carbs_grams || 0}g
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#666' }}>
+                F: {food.nutrition?.fat_grams || 0}g
+              </Typography>
             </Box>
           }
         />
@@ -265,17 +252,8 @@ const FoodSearch = ({
           onChange={(e) => setSearchQuery(e.target.value)}
           InputProps={{
             startAdornment: <SearchIcon sx={{ mr: 1, color: '#666' }} />,
-            endAdornment: (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mr: 2 }}>
-                {loading && <CircularProgress size={20} />}
-                <IconButton
-                  onClick={() => setShowBarcodeScanner(true)}
-                  size="small"
-                  sx={{ p: 0.5 }}
-                >
-                  <BarcodeIcon sx={{ fontSize: 20 }} />
-                </IconButton>
-              </Box>
+            endAdornment: loading && (
+              <CircularProgress size={20} sx={{ mr: 2 }} />
             )
           }}
           sx={{
@@ -348,130 +326,108 @@ const FoodSearch = ({
         >
           <DialogTitle sx={{ pb: 2, px: { xs: 3, sm: 4 } }}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Typography variant="h6">
+              <Typography variant="h6" sx={{ fontWeight: 600 }}>
                 Add Food
               </Typography>
-              <IconButton onClick={() => setSelectedFood(null)} size="large">
+              <IconButton
+                onClick={() => setSelectedFood(null)}
+                size="small"
+              >
                 <CloseIcon />
               </IconButton>
             </Box>
           </DialogTitle>
           <DialogContent sx={{ px: { xs: 3, sm: 4 } }}>
-            {/* Food Info */}
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-                {selectedFood?.name}
-              </Typography>
-              {selectedFood?.brand && (
-                <Typography variant="body2" sx={{ color: '#666', mb: 1 }}>
-                  {selectedFood.brand}
-                </Typography>
-              )}
-              <Typography variant="caption" sx={{ color: '#666' }}>
-                Per {selectedFood?.serving?.size || 100}{selectedFood?.serving?.unit || 'g'} serving
-              </Typography>
-            </Box>
+            {selectedFood && (
+              <Box sx={{ p: 2 }}>
+                {/* Selected Food Display */}
+                <Box sx={{ mb: 3, p: 2, bgcolor: '#f8f9fa', borderRadius: 2 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+                    {selectedFood.name}
+                  </Typography>
+                  {selectedFood.brand && (
+                    <Typography variant="body2" sx={{ color: '#666', mb: 1 }}>
+                      {selectedFood.brand}
+                    </Typography>
+                  )}
+                  <Box sx={{ display: 'flex', gap: 2 }}>
+                    <Typography variant="body2" sx={{ color: '#666' }}>
+                      {Math.round(nutrition.calories_per_serving)} cal
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#666' }}>
+                      P: {nutrition.protein_grams}g
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#666' }}>
+                      C: {nutrition.carbs_grams}g
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#666' }}>
+                      F: {nutrition.fat_grams}g
+                    </Typography>
+                  </Box>
+                </Box>
 
-            <Divider sx={{ mb: 3 }} />
+                {/* Servings Slider */}
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant="body1" sx={{ fontWeight: 600, mb: 2 }}>
+                    Servings: {servings}
+                  </Typography>
+                  <Slider
+                    value={servings}
+                    onChange={(e, newValue) => setServings(newValue)}
+                    min={0.25}
+                    max={10}
+                    step={0.25}
+                    marks={[
+                      { value: 0.25, label: '0.25' },
+                      { value: 1, label: '1' },
+                      { value: 2, label: '2' },
+                      { value: 5, label: '5' },
+                      { value: 10, label: '10' }
+                    ]}
+                    sx={{
+                      '& .MuiSlider-markLabel': {
+                        fontSize: '0.75rem'
+                      }
+                    }}
+                  />
+                </Box>
 
-            {/* Servings */}
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="body2" sx={{ color: '#666', mb: 1 }}>
-                Servings
-              </Typography>
-              <TextField
-                type="number"
-                value={servings}
-                onChange={(e) => setServings(parseFloat(e.target.value) || 1)}
-                inputProps={{ min: 0.1, step: 0.1 }}
-                sx={{ width: '120px' }}
-              />
-            </Box>
-
-            {/* Nutrition Fields */}
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="body2" sx={{ color: '#666', mb: 2 }}>
-                Nutrition (per serving)
-              </Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <TextField
-                  label="Calories"
-                  type="number"
-                  size="small"
-                  value={nutrition.calories_per_serving}
-                  onChange={(e) => setNutrition({
-                    ...nutrition,
-                    calories_per_serving: parseFloat(e.target.value) || 0
-                  })}
-                  InputProps={{
-                    endAdornment: <Typography variant="caption">cal</Typography>
-                  }}
-                />
-                <TextField
-                  label="Protein"
-                  type="number"
-                  size="small"
-                  value={nutrition.protein_grams}
-                  onChange={(e) => setNutrition({
-                    ...nutrition,
-                    protein_grams: parseFloat(e.target.value) || 0
-                  })}
-                  InputProps={{
-                    endAdornment: <Typography variant="caption">g</Typography>
-                  }}
-                />
-                <TextField
-                  label="Carbs"
-                  type="number"
-                  size="small"
-                  value={nutrition.carbs_grams}
-                  onChange={(e) => setNutrition({
-                    ...nutrition,
-                    carbs_grams: parseFloat(e.target.value) || 0
-                  })}
-                  InputProps={{
-                    endAdornment: <Typography variant="caption">g</Typography>
-                  }}
-                />
-                <TextField
-                  label="Fat"
-                  type="number"
-                  size="small"
-                  value={nutrition.fat_grams}
-                  onChange={(e) => setNutrition({
-                    ...nutrition,
-                    fat_grams: parseFloat(e.target.value) || 0
-                  })}
-                  InputProps={{
-                    endAdornment: <Typography variant="caption">g</Typography>
-                  }}
-                />
+                {/* Total Preview */}
+                <Box sx={{ p: 2, bgcolor: '#f8f9fa', borderRadius: 2 }}>
+                  <Typography variant="body1" sx={{ fontWeight: 600, mb: 1 }}>
+                    Total ({servings} serving{servings !== 1 ? 's' : ''}):
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 2 }}>
+                    <Typography variant="body1" sx={{ fontWeight: 600, color: '#4caf50' }}>
+                      {Math.round(nutrition.calories_per_serving * servings)} cal
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#666' }}>
+                      P: {Math.round(nutrition.protein_grams * servings * 10) / 10}g
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#666' }}>
+                      C: {Math.round(nutrition.carbs_grams * servings * 10) / 10}g
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#666' }}>
+                      F: {Math.round(nutrition.fat_grams * servings * 10) / 10}g
+                    </Typography>
+                  </Box>
+                </Box>
               </Box>
-            </Box>
-
-            {/* Total Preview */}
-            <Box sx={{ p: 2, bgcolor: '#f8f9fa', borderRadius: 1 }}>
-              <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
-                Total ({servings} serving{servings !== 1 ? 's' : ''}):
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 2 }}>
-                <Typography variant="body2" sx={{ fontWeight: 600, color: '#4caf50' }}>
-                  {Math.round(nutrition.calories_per_serving * servings)} cal
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#666' }}>
-                  P: {Math.round(nutrition.protein_grams * servings * 10) / 10}g
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#666' }}>
-                  C: {Math.round(nutrition.carbs_grams * servings * 10) / 10}g
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#666' }}>
-                  F: {Math.round(nutrition.fat_grams * servings * 10) / 10}g
-                </Typography>
-              </Box>
-            </Box>
+            )}
           </DialogContent>
-          <DialogActions sx={{ p: { xs: 3, sm: 4 }, pt: 2, gap: 2 }}>
-            <Button onClick={() => setSelectedFood(null)} size="large">
+          <DialogActions sx={{
+            px: { xs: 3, sm: 4 },
+            pb: { xs: 3, sm: 4 },
+            gap: 2,
+            flexDirection: { xs: 'column', sm: 'row' },
+            alignItems: 'stretch'
+          }}>
+            <Button
+              onClick={() => setSelectedFood(null)}
+              variant="text"
+              size="large"
+              sx={{ color: '#666' }}
+            >
               Cancel
             </Button>
             <Button
@@ -479,6 +435,12 @@ const FoodSearch = ({
               variant="contained"
               startIcon={<AddIcon />}
               size="large"
+              sx={{
+                bgcolor: '#4caf50',
+                '&:hover': {
+                  bgcolor: '#45a049'
+                }
+              }}
             >
               Add Food
             </Button>

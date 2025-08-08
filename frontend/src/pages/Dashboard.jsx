@@ -25,7 +25,7 @@ import { useSettings } from '../hooks/useSettings.js';
 import { fitnessGeekService } from '../services/fitnessGeekService.js';
 import { weightService } from '../services/weightService.js';
 import { bpService } from '../services/bpService.js';
-import { goalsService } from '../services/goalsService.js';
+import { settingsService } from '../services/settingsService.js';
 import { streakService } from '../services/streakService.js';
 import {
   MetricCard,
@@ -65,7 +65,7 @@ const Dashboard = () => {
           fitnessGeekService.getTodaySummary(),
           weightService.getWeightStats(),
           bpService.getBPLogs({ limit: 7 }),
-          goalsService.getGoals(),
+          settingsService.getSettings(),
           streakService.getLoginStreak()
         ]);
 
@@ -97,9 +97,24 @@ const Dashboard = () => {
           }
         }
 
-        // Handle goals
-        if (goalsData.status === 'fulfilled' && goalsData.value && goalsData.value.success) {
-          setGoals(goalsData.value.data);
+        // Handle goals from settings
+        if (goalsData.status === 'fulfilled' && goalsData.value) {
+          const resp = goalsData.value;
+          const data = resp.data || resp;
+          const ng = data?.nutrition_goal;
+          if (ng && ng.enabled) {
+            const now = new Date();
+            const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+            const [y, m, d] = local.toISOString().split('T')[0].split('-').map(Number);
+            const today = new Date(y, (m || 1) - 1, d || 1);
+            const dayIndex = (today.getDay() + 6) % 7;
+            const dayTarget = Array.isArray(ng.weekly_schedule) && ng.weekly_schedule.length === 7
+              ? ng.weekly_schedule[dayIndex]
+              : ng.daily_calorie_target;
+            setGoals({ nutrition: { goals: { calories: Math.round(dayTarget || 0) } } });
+          } else {
+            setGoals(null);
+          }
         }
 
         // Handle login streak

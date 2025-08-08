@@ -98,12 +98,21 @@ foodLogSchema.virtual('calculatedNutrition').get(function() {
   };
 });
 
+// Helper: parse YYYY-MM-DD as a local date (avoid UTC shift)
+function toLocalDate(date) {
+  if (typeof date === 'string') {
+    const [y, m, d] = date.split('-').map(Number);
+    return new Date(y, (m || 1) - 1, d || 1);
+  }
+  return new Date(date);
+}
+
 // Static method to get logs for a specific date
 foodLogSchema.statics.getLogsForDate = async function(userId, date) {
-  const startDate = new Date(date);
+  const startDate = toLocalDate(date);
   startDate.setHours(0, 0, 0, 0);
 
-  const endDate = new Date(date);
+  const endDate = toLocalDate(date);
   endDate.setHours(23, 59, 59, 999);
 
   return await this.find({
@@ -116,10 +125,10 @@ foodLogSchema.statics.getLogsForDate = async function(userId, date) {
 
 // Static method to get logs for a date range
 foodLogSchema.statics.getLogsForDateRange = async function(userId, startDate, endDate) {
-  const start = new Date(startDate);
+  const start = toLocalDate(startDate);
   start.setHours(0, 0, 0, 0);
 
-  const end = new Date(endDate);
+  const end = toLocalDate(endDate);
   end.setHours(23, 59, 59, 999);
 
   return await this.find({
@@ -140,10 +149,10 @@ foodLogSchema.statics.getRecentLogs = async function(userId, limit = 10) {
 
 // Static method to get logs by meal type
 foodLogSchema.statics.getLogsByMealType = async function(userId, mealType, date) {
-  const startDate = new Date(date);
+  const startDate = toLocalDate(date);
   startDate.setHours(0, 0, 0, 0);
 
-  const endDate = new Date(date);
+  const endDate = toLocalDate(date);
   endDate.setHours(23, 59, 59, 999);
 
   return await this.find({

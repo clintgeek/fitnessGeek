@@ -136,7 +136,7 @@ const useBaseGeekAuth = (appName) => {
       const response = await axios.post('https://basegeek.clintgeek.com/api/auth/login', {
         identifier,
         password,
-        app: appName // Must be one of: 'basegeek', 'notegeek', 'bujogeek', 'fitnessgeek'
+        app: appName // Must be one of: 'basegeek', 'notegeek', 'bujogeek', 'fitnessgeek', 'storygeek'
       });
 
       const { token, refreshToken, user } = response.data;

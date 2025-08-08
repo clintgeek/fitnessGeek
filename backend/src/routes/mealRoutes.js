@@ -8,6 +8,15 @@ const logger = require('../config/logger');
 // Apply authentication to all routes
 router.use(authenticateToken);
 
+// Parse YYYY-MM-DD as local date (avoid UTC shift)
+function parseLocalDate(input) {
+  if (typeof input === 'string') {
+    const [y, m, d] = input.split('-').map(Number);
+    return new Date(y, (m || 1) - 1, d || 1);
+  }
+  return new Date(input);
+}
+
 // GET /api/meals - Get all user's meals
 router.get('/', async (req, res) => {
   try {
@@ -360,7 +369,7 @@ router.post('/:id/add-to-log', async (req, res) => {
       const log = new FoodLog({
         user_id: userId,
         food_item_id: item.food_item_id._id,
-        log_date: new Date(log_date),
+        log_date: parseLocalDate(log_date),
         meal_type: meal_type,
         servings: item.servings,
         notes: `Added from meal: ${meal.name}`,

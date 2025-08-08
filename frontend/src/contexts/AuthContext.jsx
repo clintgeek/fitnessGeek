@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { authService } from '../services/authService.js';
+import { streakService } from '../services/streakService.js';
 import { AuthContext } from './AuthContextDef.jsx';
 
 // Auth provider component
@@ -42,12 +43,15 @@ export const AuthProvider = ({ children }) => {
           // Try to get current user (this will trigger token refresh if needed)
           const currentUser = await authService.getCurrentUser();
           setUser(currentUser);
+          // Record daily login once per local day
+          await recordDailyLoginIfNeeded();
         } catch (error) {
           console.error('Error getting current user:', error);
           // If getting user fails, try to refresh token
           try {
             const refreshResult = await authService.refreshToken();
             setUser(refreshResult.user);
+            await recordDailyLoginIfNeeded();
           } catch (refreshError) {
             console.error('Token refresh failed:', refreshError);
             // If refresh fails, logout the user
@@ -73,6 +77,7 @@ export const AuthProvider = ({ children }) => {
 
       const response = await authService.login(credentials);
       setUser(response.user);
+      await recordDailyLoginIfNeeded();
 
       return response;
     } catch (error) {
@@ -80,6 +85,25 @@ export const AuthProvider = ({ children }) => {
       throw error;
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Record streak once per local calendar day
+  const recordDailyLoginIfNeeded = async () => {
+    try {
+      const todayLocal = (() => {
+        const now = new Date();
+        const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+        return local.toISOString().split('T')[0];
+      })();
+      const key = 'fitnessgeek_last_login_recorded';
+      const last = localStorage.getItem(key);
+      if (last !== todayLocal) {
+        await streakService.recordLogin();
+        localStorage.setItem(key, todayLocal);
+      }
+    } catch (e) {
+      console.error('Failed to record daily login streak:', e);
     }
   };
 

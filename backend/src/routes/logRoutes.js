@@ -9,6 +9,15 @@ const logger = require('../config/logger');
 // Apply authentication to all routes
 router.use(authenticateToken);
 
+// Parse YYYY-MM-DD as local date to avoid UTC shift
+function parseLocalDate(input) {
+  if (typeof input === 'string') {
+    const [y, m, d] = input.split('-').map(Number);
+    return new Date(y, (m || 1) - 1, d || 1);
+  }
+  return new Date(input);
+}
+
 // GET /api/logs - Get food logs for a date
 router.get('/', async (req, res) => {
   try {
@@ -153,7 +162,7 @@ router.post('/', async (req, res) => {
     const log = new FoodLog({
       user_id: userId,
       food_item_id: foodItem._id,
-      log_date: new Date(log_date),
+      log_date: parseLocalDate(log_date),
       meal_type,
       servings: parseFloat(servings),
       notes: notes || '',
@@ -237,7 +246,7 @@ router.put('/:id', async (req, res) => {
     }
 
     if (log_date !== undefined) {
-      log.log_date = new Date(log_date);
+      log.log_date = parseLocalDate(log_date);
     }
 
     if (notes !== undefined) {

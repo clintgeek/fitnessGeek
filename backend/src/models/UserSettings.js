@@ -76,6 +76,23 @@ const userSettingsSchema = new mongoose.Schema({
       default: true
     }
   },
+  // Nutrition / calorie goal from Calorie Wizard
+  nutrition_goal: {
+    enabled: { type: Boolean, default: false },
+    start_date: { type: Date },
+    start_weight: { type: Number },
+    target_weight: { type: Number },
+    activity_level: { type: String },
+    weight_change_rate: { type: Number },
+    plan_type: { type: String, enum: ['standard', 'weekender', 'auto', 'stepFlex'], default: 'standard' },
+    daily_calorie_target: { type: Number },
+    weekly_schedule: { type: [Number], default: undefined }, // 7 values Mon..Sun
+    min_safe_calories: { type: Number },
+    bmr: { type: Number },
+    tdee: { type: Number },
+    timeline_weeks: { type: Number },
+    estimated_end_date: { type: Date }
+  },
   units: {
     weight: {
       type: String,
@@ -86,6 +103,31 @@ const userSettingsSchema = new mongoose.Schema({
       type: String,
       enum: ['ft', 'cm'],
       default: 'ft'
+    }
+  },
+  // AI settings
+  ai: {
+    enabled: {
+      type: Boolean,
+      default: true
+    },
+    features: {
+      natural_language_food_logging: {
+        type: Boolean,
+        default: true
+      },
+      meal_suggestions: {
+        type: Boolean,
+        default: true
+      },
+      nutrition_analysis: {
+        type: Boolean,
+        default: true
+      },
+      goal_recommendations: {
+        type: Boolean,
+        default: true
+      }
     }
   }
 }, {

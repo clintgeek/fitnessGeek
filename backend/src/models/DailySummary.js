@@ -90,9 +90,17 @@ const dailySummarySchema = new mongoose.Schema({
 // Compound index for user and date
 dailySummarySchema.index({ user_id: 1, date: 1 }, { unique: true });
 
+function parseLocalDate(input) {
+  if (typeof input === 'string') {
+    const [y, m, d] = input.split('-').map(Number);
+    return new Date(y, (m || 1) - 1, d || 1);
+  }
+  return new Date(input);
+}
+
 // Static method to get or create daily summary
 dailySummarySchema.statics.getOrCreate = async function(userId, date) {
-  const startDate = new Date(date);
+  const startDate = parseLocalDate(date);
   startDate.setHours(0, 0, 0, 0);
 
   let summary = await this.findOne({
@@ -116,10 +124,10 @@ dailySummarySchema.statics.updateFromLogs = async function(userId, date) {
   const FoodLog = mongoose.model('FoodLog');
   const NutritionGoals = mongoose.model('NutritionGoals');
 
-  const startDate = new Date(date);
+  const startDate = parseLocalDate(date);
   startDate.setHours(0, 0, 0, 0);
 
-  const endDate = new Date(date);
+  const endDate = parseLocalDate(date);
   endDate.setHours(23, 59, 59, 999);
 
   // Get all logs for the date

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -41,6 +41,7 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth.js';
 import { useSettings } from '../hooks/useSettings.js';
+import { userService } from '../services/userService.js';
 import DashboardOrderSettings from '../components/DashboardOrderSettings.jsx';
 
 const Profile = () => {
@@ -57,8 +58,35 @@ const Profile = () => {
   });
   const [editData, setEditData] = useState({
     username: user?.username || user?.name || '',
-    email: user?.email || ''
+    email: user?.email || '',
+    firstName: '',
+    lastName: '',
+    age: '',
+    height: '',
+    gender: ''
   });
+
+  // Load user profile data on mount
+  useEffect(() => {
+    loadUserProfile();
+  }, []);
+
+  const loadUserProfile = async () => {
+    try {
+      const userData = await userService.getProfile();
+      setEditData({
+        username: userData.username || '',
+        email: userData.email || '',
+        firstName: userData.profile?.firstName || '',
+        lastName: userData.profile?.lastName || '',
+        age: userData.profile?.age || '',
+        height: userData.profile?.height || '',
+        gender: userData.profile?.gender || ''
+      });
+    } catch (error) {
+      console.error('Failed to load user profile:', error);
+    }
+  };
 
   const handleDashboardSettingChange = async (setting, value) => {
     console.log('Profile: handleDashboardSettingChange called with:', setting, value);
@@ -115,12 +143,29 @@ const Profile = () => {
   const handleSaveProfile = async () => {
     setLoading(true);
     try {
-      // TODO: Update profile in backend
-      setSuccess('Profile updated successfully!');
-      setShowEditDialog(false);
+      // Prepare profile data for baseGeek
+      const profileData = {
+        firstName: editData.firstName,
+        lastName: editData.lastName,
+        age: editData.age,
+        height: editData.height,
+        gender: editData.gender
+      };
+
+      // Update profile in baseGeek
+      const result = await userService.updateProfile(profileData);
+      if (result.success) {
+        setSuccess('Profile updated successfully!');
+        setShowEditDialog(false);
+        // Reload user profile data
+        await loadUserProfile();
+      } else {
+        setError('Failed to update profile');
+      }
       setTimeout(() => setSuccess(''), 3000);
-    } catch {
-      setError('Failed to update profile');
+    } catch (error) {
+      setError(error.message || 'Failed to update profile');
+      setTimeout(() => setError(''), 3000);
     } finally {
       setLoading(false);
     }
@@ -154,18 +199,26 @@ const Profile = () => {
                 {(user?.username || user?.name)?.charAt(0)?.toUpperCase() || 'U'}
               </Avatar>
               <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
-                {user?.username || user?.name || 'User'}
+                {editData.firstName && editData.lastName
+                  ? `${editData.firstName} ${editData.lastName}`
+                  : editData.username || user?.username || user?.name || 'User'
+                }
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                {user?.email || 'user@example.com'}
+                {editData.email || user?.email || 'user@example.com'}
               </Typography>
               <Button
                 variant="outlined"
                 startIcon={<EditIcon />}
                 onClick={() => {
                   setEditData({
-                    username: user?.username || user?.name || '',
-                    email: user?.email || ''
+                    username: editData.username || user?.username || user?.name || '',
+                    email: editData.email || user?.email || '',
+                    firstName: editData.firstName || '',
+                    lastName: editData.lastName || '',
+                    age: editData.age || '',
+                    height: editData.height || '',
+                    gender: editData.gender || ''
                   });
                   setShowEditDialog(true);
                 }}
@@ -351,6 +404,47 @@ const Profile = () => {
             onChange={(e) => setEditData({ ...editData, email: e.target.value })}
             sx={{ mb: 2 }}
           />
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 2 }}>
+            <TextField
+              label="First Name"
+              value={editData.firstName}
+              onChange={(e) => setEditData({ ...editData, firstName: e.target.value })}
+            />
+            <TextField
+              label="Last Name"
+              value={editData.lastName}
+              onChange={(e) => setEditData({ ...editData, lastName: e.target.value })}
+            />
+          </Box>
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 2 }}>
+            <TextField
+              label="Age"
+              type="number"
+              value={editData.age}
+              onChange={(e) => setEditData({ ...editData, age: e.target.value })}
+            />
+            <TextField
+              label="Height"
+              placeholder="5'11"
+              value={editData.height}
+              onChange={(e) => setEditData({ ...editData, height: e.target.value })}
+            />
+          </Box>
+          <TextField
+            fullWidth
+            select
+            label="Gender"
+            value={editData.gender}
+            onChange={(e) => setEditData({ ...editData, gender: e.target.value })}
+            sx={{ mb: 2 }}
+            SelectProps={{ native: true }}
+          >
+            <option value="">Select gender</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="other">Other</option>
+            <option value="prefer-not-to-say">Prefer not to say</option>
+          </TextField>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setShowEditDialog(false)}>Cancel</Button>

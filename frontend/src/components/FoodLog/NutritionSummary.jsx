@@ -2,14 +2,17 @@ import React from 'react';
 import {
   Box,
   Typography,
-  LinearProgress
+  LinearProgress,
+  IconButton,
+  Tooltip
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import {
   LocalFireDepartment as CaloriesIcon,
   FitnessCenter as ProteinIcon,
   Grain as CarbsIcon,
-  Opacity as FatIcon
+  Opacity as FatIcon,
+  Settings as SettingsIcon
 } from '@mui/icons-material';
 
 // RDA values for a 2000 calorie diet
@@ -22,7 +25,8 @@ const RDA_VALUES = {
 
 const NutritionSummary = ({
   summary,
-  showGoals = true
+  showGoals = true,
+  onCalorieSettingsClick
 }) => {
   const theme = useTheme();
 
@@ -120,9 +124,27 @@ const NutritionSummary = ({
                 p: 1.5,
                 borderRadius: 1,
                 backgroundColor: theme.palette.grey[50],
-                border: 'none'
+                border: 'none',
+                position: 'relative'
               }}
             >
+              {item.label === 'Calories' && onCalorieSettingsClick && (
+                <Tooltip title="Calorie goal settings">
+                  <IconButton
+                    size="small"
+                    onClick={onCalorieSettingsClick}
+                    sx={{
+                      position: 'absolute',
+                      top: 6,
+                      right: 6,
+                      color: theme.palette.text.disabled
+                    }}
+                    aria-label="calorie-goal-settings"
+                  >
+                    <SettingsIcon fontSize="inherit" />
+                  </IconButton>
+                </Tooltip>
+              )}
               <Box sx={{
                 display: 'flex',
                 alignItems: 'center',

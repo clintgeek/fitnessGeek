@@ -6,3 +6,4 @@ export { default as MealSection } from './MealSection.jsx';
 export { default as NutritionSummary } from './NutritionSummary.jsx';
 export { default as SaveMealDialog } from './SaveMealDialog.jsx';
 export { default as EditLogDialog } from './EditLogDialog.jsx';
+export { default as NaturalLanguageInput } from './NaturalLanguageInput.jsx';

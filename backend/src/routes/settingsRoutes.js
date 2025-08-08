@@ -12,8 +12,6 @@ router.get('/', async (req, res) => {
   try {
     const userId = req.user.id;
 
-
-
     const settings = await UserSettings.getOrCreate(userId);
 
     logger.info('User settings retrieved', { userId });
@@ -46,7 +44,9 @@ router.put('/', async (req, res) => {
       'dashboard',
       'theme',
       'notifications',
-      'units'
+      'units',
+      'ai',
+      'nutrition_goal'
     ];
 
     const validUpdateData = {};
@@ -81,13 +81,57 @@ router.put('/', async (req, res) => {
   }
 });
 
+// PUT /api/settings/ai - Update AI settings specifically
+router.put('/ai', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const aiSettings = req.body;
+
+    // Validate AI settings structure
+    const allowedAIFields = [
+      'enabled',
+      'features'
+    ];
+
+    const validAISettings = {};
+    allowedAIFields.forEach(field => {
+      if (aiSettings[field] !== undefined) {
+        validAISettings[field] = aiSettings[field];
+      }
+    });
+
+    const settings = await UserSettings.updateSettings(userId, {
+      ai: validAISettings
+    });
+
+    logger.info('AI settings updated', {
+      userId,
+      aiSettings: validAISettings
+    });
+
+    res.json({
+      success: true,
+      data: settings.ai,
+      message: 'AI settings updated successfully'
+    });
+
+  } catch (error) {
+    logger.error('Error updating AI settings:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        message: 'Failed to update AI settings',
+        code: 'AI_SETTINGS_UPDATE_ERROR'
+      }
+    });
+  }
+});
+
 // PUT /api/settings/dashboard - Update dashboard settings specifically
 router.put('/dashboard', async (req, res) => {
   try {
     const userId = req.user.id;
     const dashboardSettings = req.body;
-
-
 
     // Validate dashboard settings
     const allowedDashboardFields = [
@@ -102,20 +146,20 @@ router.put('/dashboard', async (req, res) => {
       'card_order'
     ];
 
-    const validDashboardData = {};
+    const validDashboardSettings = {};
     allowedDashboardFields.forEach(field => {
       if (dashboardSettings[field] !== undefined) {
-        validDashboardData[field] = dashboardSettings[field];
+        validDashboardSettings[field] = dashboardSettings[field];
       }
     });
 
     const settings = await UserSettings.updateSettings(userId, {
-      dashboard: validDashboardData
+      dashboard: validDashboardSettings
     });
 
     logger.info('Dashboard settings updated', {
       userId,
-      updatedFields: Object.keys(validDashboardData)
+      dashboardSettings: validDashboardSettings
     });
 
     res.json({

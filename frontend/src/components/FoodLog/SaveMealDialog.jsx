@@ -30,10 +30,39 @@ const SaveMealDialog = ({
       const mealData = {
         name: mealName.trim(),
         meal_type: mealType,
-        food_items: logs.map(log => ({
-          food_item_id: log.food_item_id || log.food_item._id,
-          servings: log.servings || 1
-        }))
+        food_items: logs.map(log => {
+          const food = log.food_item || log.food_item_id || {};
+          const rawId = log.food_item_id || food._id;
+          const foodId = typeof rawId === 'object' ? rawId?._id : rawId;
+          const servings = log.servings || 1;
+          if (foodId) {
+            return { food_item_id: foodId, servings };
+          }
+          // Fallback payload to allow creating a custom food when no id exists
+          return {
+            servings,
+            food_item_payload: {
+              name: food.name,
+              brand: food.brand,
+              barcode: food.barcode,
+              source: food.source || 'custom',
+              source_id: food.source_id,
+              nutrition: {
+                calories_per_serving: food.nutrition?.calories_per_serving || 0,
+                protein_grams: food.nutrition?.protein_grams || 0,
+                carbs_grams: food.nutrition?.carbs_grams || 0,
+                fat_grams: food.nutrition?.fat_grams || 0,
+                fiber_grams: food.nutrition?.fiber_grams || 0,
+                sugar_grams: food.nutrition?.sugar_grams || 0,
+                sodium_mg: food.nutrition?.sodium_mg || 0
+              },
+              serving: {
+                size: food.serving?.size || food.serving_size || 100,
+                unit: food.serving?.unit || food.serving_unit || 'g'
+              }
+            }
+          };
+        })
       };
       onSave(mealData);
     }

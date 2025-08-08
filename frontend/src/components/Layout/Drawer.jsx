@@ -15,7 +15,9 @@ import {
   Restaurant as FoodSearchIcon,
   Restaurant as FoodIcon,
   LocalDining as MyFoodsIcon,
+  RestaurantMenu as MyMealsIcon,
   Flag as GoalsIcon,
+  Calculate as CalorieIcon,
   Logout as LogoutIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
@@ -37,16 +39,22 @@ const AppDrawer = ({ open, onClose }) => {
 
   const menuItems = [
     {
-      text: 'Goals & Targets',
-      icon: <GoalsIcon />,
-      path: '/goals',
-      description: 'Set nutrition and weight goals'
+      text: 'Calorie Goal Wizard',
+      icon: <CalorieIcon />,
+      path: '/calorie-wizard',
+      description: 'Set calorie goals and create nutrition plans'
     },
     {
       text: 'My Foods',
       icon: <MyFoodsIcon />,
       path: '/my-foods',
       description: 'Manage your saved foods'
+    },
+    {
+      text: 'My Meals',
+      icon: <MyMealsIcon />,
+      path: '/my-meals',
+      description: 'Manage your saved meals'
     },
     {
       text: 'Food Search',
@@ -107,12 +115,12 @@ const AppDrawer = ({ open, onClose }) => {
                 primary={item.text}
                 secondary={item.description}
                 primaryTypographyProps={{
+                  fontSize: '0.95rem',
                   fontWeight: 500,
-                  color: '#333333',
                 }}
                 secondaryTypographyProps={{
                   fontSize: '0.75rem',
-                  color: '#757575',
+                  color: '#666',
                 }}
               />
             </ListItemButton>
@@ -120,9 +128,8 @@ const AppDrawer = ({ open, onClose }) => {
         ))}
       </List>
 
-      <Divider />
+      <Divider sx={{ mt: 'auto' }} />
 
-      {/* Logout Section */}
       <List>
         <ListItem disablePadding>
           <ListItemButton
@@ -131,23 +138,19 @@ const AppDrawer = ({ open, onClose }) => {
               py: 2,
               px: 3,
               '&:hover': {
-                backgroundColor: '#ffebee',
+                backgroundColor: '#f5f5f5',
               },
             }}
           >
-            <ListItemIcon sx={{ color: '#d32f2f', minWidth: 40 }}>
+            <ListItemIcon sx={{ color: '#f44336', minWidth: 40 }}>
               <LogoutIcon />
             </ListItemIcon>
             <ListItemText
               primary="Logout"
-              secondary="Sign out of your account"
               primaryTypographyProps={{
+                fontSize: '0.95rem',
                 fontWeight: 500,
-                color: '#d32f2f',
-              }}
-              secondaryTypographyProps={{
-                fontSize: '0.75rem',
-                color: '#757575',
+                color: '#f44336',
               }}
             />
           </ListItemButton>

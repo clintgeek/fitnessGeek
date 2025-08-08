@@ -11,9 +11,12 @@ router.use(authenticateToken);
 router.get('/today', async (req, res) => {
   try {
     const userId = req.user.id;
-    const today = new Date().toISOString().split('T')[0];
+    // Local today in YYYY-MM-DD
+    const now = new Date();
+    const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+    const today = local.toISOString().split('T')[0];
 
-    const summary = await DailySummary.getOrCreate(userId, today);
+    const summary = await DailySummary.updateFromLogs(userId, today);
 
     logger.info('Today\'s summary retrieved', {
       userId,
@@ -43,7 +46,7 @@ router.get('/:date', async (req, res) => {
     const { date } = req.params;
     const userId = req.user.id;
 
-    const summary = await DailySummary.getOrCreate(userId, date);
+    const summary = await DailySummary.updateFromLogs(userId, date);
 
     logger.info('Daily summary retrieved', {
       userId,
