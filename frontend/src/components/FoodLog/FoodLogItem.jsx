@@ -26,7 +26,10 @@ const FoodLogItem = ({
     return null;
   }
 
-  const nutrition = food_item.nutrition;
+  // Prefer the log's stored snapshot if available; fallback to the food item's base nutrition
+  const nutrition = (log.nutrition && Object.keys(log.nutrition || {}).length > 0)
+    ? log.nutrition
+    : food_item.nutrition;
   const servingsCount = typeof servings === 'string' ? parseFloat(servings) || 1 : (servings || 1);
 
   const totalCalories = Math.round(nutrition.calories_per_serving * servingsCount);

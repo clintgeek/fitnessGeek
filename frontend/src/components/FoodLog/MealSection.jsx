@@ -64,13 +64,20 @@ const MealSection = ({
       const food_item = log.food_item || log.food_item_id;
       const { servings } = log;
 
-      // Safety check for food_item and nutrition
-      if (!food_item || !food_item.nutrition) {
+      // Safety check for food_item
+      if (!food_item) {
         console.warn('Food item or nutrition data missing in meal section:', log);
         return totals;
       }
 
-      const nutrition = food_item.nutrition;
+      // Prefer the log's stored nutrition snapshot when present
+      const nutrition = (log.nutrition && Object.keys(log.nutrition || {}).length > 0)
+        ? log.nutrition
+        : food_item.nutrition;
+
+      if (!nutrition) {
+        return totals;
+      }
       const servingsCount = typeof servings === 'string' ? parseFloat(servings) || 1 : (servings || 1);
 
       return {

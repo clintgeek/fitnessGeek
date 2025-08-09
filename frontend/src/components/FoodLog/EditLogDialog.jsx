@@ -12,7 +12,10 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Chip
+  Chip,
+  Slider,
+  InputAdornment,
+  Grid
 } from '@mui/material';
 import {
   Restaurant as FoodIcon
@@ -28,12 +31,26 @@ const EditLogDialog = ({
   const [servings, setServings] = useState('1');
   const [mealType, setMealType] = useState('dinner');
   const [notes, setNotes] = useState('');
+  const [nutrition, setNutrition] = useState({
+    calories_per_serving: 0,
+    protein_grams: 0,
+    carbs_grams: 0,
+    fat_grams: 0
+  });
 
   useEffect(() => {
     if (log) {
       setServings(log.servings?.toString() || '1');
       setMealType(log.meal_type || 'dinner');
       setNotes(log.notes || '');
+      const food_item_ref = log?.food_item || log?.food_item_id;
+      const initialNutrition = log?.nutrition || food_item_ref?.nutrition || {
+        calories_per_serving: 0,
+        protein_grams: 0,
+        carbs_grams: 0,
+        fat_grams: 0
+      };
+      setNutrition(initialNutrition);
     }
   }, [log]);
 
@@ -42,7 +59,13 @@ const EditLogDialog = ({
       const updateData = {
         servings: parseFloat(servings) || 1,
         meal_type: mealType,
-        notes: notes.trim()
+        notes: notes.trim(),
+        nutrition: {
+          calories_per_serving: Math.max(0, parseFloat(nutrition.calories_per_serving) || 0),
+          protein_grams: Math.max(0, parseFloat(nutrition.protein_grams) || 0),
+          carbs_grams: Math.max(0, parseFloat(nutrition.carbs_grams) || 0),
+          fat_grams: Math.max(0, parseFloat(nutrition.fat_grams) || 0)
+        }
       };
       onSave(log._id || log.id, updateData);
     }
@@ -53,7 +76,14 @@ const EditLogDialog = ({
   };
 
   const food_item = log?.food_item || log?.food_item_id;
-  const nutrition = food_item?.nutrition;
+
+  const setNutritionField = (field, value) => {
+    const v = parseFloat(value);
+    setNutrition((prev) => ({
+      ...prev,
+      [field]: Number.isFinite(v) ? v : 0
+    }));
+  };
 
   const mealTypeOptions = [
     { value: 'breakfast', label: 'Breakfast' },
@@ -90,25 +120,78 @@ const EditLogDialog = ({
                 <Typography variant="h6" fontWeight={600}>
                   {food_item.name}
                 </Typography>
-                {nutrition && (
-                  <Typography variant="body2" color="text.secondary">
-                    {Math.round(nutrition.calories_per_serving)} cal • P: {nutrition.protein_grams}g • C: {nutrition.carbs_grams}g • F: {nutrition.fat_grams}g
-                  </Typography>
-                )}
+                <Grid container spacing={1.5} sx={{ mt: 0.5 }}>
+                  <Grid item xs={6} sm={3}>
+                    <TextField
+                      label="Calories"
+                      type="number"
+                      size="small"
+                      value={nutrition.calories_per_serving}
+                      onChange={(e) => setNutritionField('calories_per_serving', e.target.value)}
+                      fullWidth
+                      InputProps={{ endAdornment: <InputAdornment position="end">kcal</InputAdornment> }}
+                    />
+                  </Grid>
+                  <Grid item xs={6} sm={3}>
+                    <TextField
+                      label="Protein"
+                      type="number"
+                      size="small"
+                      value={nutrition.protein_grams}
+                      onChange={(e) => setNutritionField('protein_grams', e.target.value)}
+                      fullWidth
+                      InputProps={{ endAdornment: <InputAdornment position="end">g</InputAdornment> }}
+                    />
+                  </Grid>
+                  <Grid item xs={6} sm={3}>
+                    <TextField
+                      label="Carbs"
+                      type="number"
+                      size="small"
+                      value={nutrition.carbs_grams}
+                      onChange={(e) => setNutritionField('carbs_grams', e.target.value)}
+                      fullWidth
+                      InputProps={{ endAdornment: <InputAdornment position="end">g</InputAdornment> }}
+                    />
+                  </Grid>
+                  <Grid item xs={6} sm={3}>
+                    <TextField
+                      label="Fat"
+                      type="number"
+                      size="small"
+                      value={nutrition.fat_grams}
+                      onChange={(e) => setNutritionField('fat_grams', e.target.value)}
+                      fullWidth
+                      InputProps={{ endAdornment: <InputAdornment position="end">g</InputAdornment> }}
+                    />
+                  </Grid>
+                </Grid>
               </Box>
             </Box>
           )}
 
           {/* Servings */}
-          <TextField
-            fullWidth
-            label="Servings"
-            type="number"
-            value={servings}
-            onChange={(e) => setServings(e.target.value)}
-            inputProps={{ min: 0.1, step: 0.1 }}
-            sx={{ mb: 2 }}
-          />
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="body2" sx={{ mb: 1, color: 'text.secondary' }}>Servings</Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Slider
+                value={parseFloat(servings) || 1}
+                onChange={(e, val) => setServings(String(val))}
+                min={0.25}
+                max={10}
+                step={0.25}
+                sx={{ flex: 1 }}
+              />
+              <TextField
+                type="number"
+                size="small"
+                value={servings}
+                onChange={(e) => setServings(e.target.value)}
+                inputProps={{ min: 0.25, step: 0.25 }}
+                sx={{ width: 100 }}
+              />
+            </Box>
+          </Box>
 
           {/* Meal Type */}
           <FormControl fullWidth sx={{ mb: 2 }}>

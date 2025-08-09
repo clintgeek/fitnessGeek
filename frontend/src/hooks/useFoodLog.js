@@ -90,11 +90,21 @@ export const useFoodLog = (selectedDate) => {
   // Add food to log
   const addFoodToLog = async (food, mealType) => {
     try {
+      const parsedServings = typeof food?.servings === 'string'
+        ? parseFloat(food.servings)
+        : (food?.servings ?? 1);
+
+      const safeServings = Number.isFinite(parsedServings) && parsedServings > 0
+        ? parsedServings
+        : 1;
+
       const logData = {
         food_item: food,
         meal_type: mealType,
-        servings: 1,
-        log_date: selectedDate
+        servings: Math.max(0.1, safeServings),
+        log_date: selectedDate,
+        // Preserve nutrition snapshot at time of logging when provided
+        nutrition: food?.nutrition
       };
 
       console.log('Sending log data:', logData);
@@ -195,13 +205,20 @@ export const useFoodLog = (selectedDate) => {
       const food_item = log.food_item || log.food_item_id;
       const { servings } = log;
 
-      // Safety check for food_item and nutrition
-      if (!food_item || !food_item.nutrition) {
+      // Safety check for food_item
+      if (!food_item) {
         console.warn('Food item or nutrition data missing:', log);
         return acc;
       }
 
-      const nutrition = food_item.nutrition;
+      // Prefer the log's stored snapshot when present
+      const nutrition = (log.nutrition && Object.keys(log.nutrition || {}).length > 0)
+        ? log.nutrition
+        : food_item.nutrition;
+
+      if (!nutrition) {
+        return acc;
+      }
       const servingsCount = typeof servings === 'string' ? parseFloat(servings) || 1 : (servings || 1);
 
       return {

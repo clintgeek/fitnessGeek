@@ -44,13 +44,17 @@ const BarcodeScanner = ({ open, onClose, onBarcodeScanned }) => {
     if (open) {
       loadScanHistory();
       // Auto-start scanner when dialog opens
-      setTimeout(() => {
-        if (!isManualMode) {
+      const timeout = setTimeout(() => {
+        if (!isManualMode && !isScanning) {
           startScanner();
         }
-      }, 500);
+      }, 300);
+      return () => clearTimeout(timeout);
+    } else {
+      // Ensure camera stops on close
+      stopScanner();
     }
-  }, [open]);
+  }, [open, isManualMode]);
 
   useEffect(() => {
     return () => {
@@ -328,6 +332,32 @@ const BarcodeScanner = ({ open, onClose, onBarcodeScanned }) => {
           </div>
         )}
 
+        {/* Center tap-to-start if not scanning */}
+        {!isScanning && !isLoading && (
+          <Box
+            onClick={() => startScanner()}
+            sx={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              bgcolor: 'rgba(0,0,0,0.4)',
+              color: 'white',
+              p: 2,
+              borderRadius: 2,
+              cursor: 'pointer',
+              userSelect: 'none'
+            }}
+          >
+            <CameraIcon2 sx={{ fontSize: 48, mb: 1 }} />
+            <Typography variant="body2">Tap to start scanner</Typography>
+          </Box>
+        )}
+
         {isLoading && (
           <div className="scanner-loading">
             <CircularProgress />
@@ -338,7 +368,15 @@ const BarcodeScanner = ({ open, onClose, onBarcodeScanned }) => {
         <Fab
           color="primary"
           size="small"
-          onClick={toggleMode}
+          onClick={() => {
+            if (isManualMode) {
+              toggleMode();
+            } else if (!isScanning) {
+              startScanner();
+            } else {
+              toggleMode();
+            }
+          }}
           sx={{
             position: 'absolute',
             top: 20,

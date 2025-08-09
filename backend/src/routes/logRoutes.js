@@ -209,7 +209,7 @@ router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user.id;
-    const { meal_type, servings, log_date, notes } = req.body;
+    const { meal_type, servings, log_date, notes, nutrition } = req.body;
 
     const log = await FoodLog.findOne({
       _id: id,
@@ -251,6 +251,19 @@ router.put('/:id', async (req, res) => {
 
     if (notes !== undefined) {
       log.notes = notes;
+    }
+
+    // Allow updating nutrition snapshot if provided
+    if (nutrition !== undefined && typeof nutrition === 'object') {
+      log.nutrition = {
+        calories_per_serving: Number(nutrition.calories_per_serving) || 0,
+        protein_grams: Number(nutrition.protein_grams) || 0,
+        carbs_grams: Number(nutrition.carbs_grams) || 0,
+        fat_grams: Number(nutrition.fat_grams) || 0,
+        sodium_mg: Number(nutrition.sodium_mg) || 0,
+        fiber_grams: Number(nutrition.fiber_grams) || 0,
+        sugar_grams: Number(nutrition.sugar_grams) || 0
+      };
     }
 
     const updatedLog = await log.save();
