@@ -18,10 +18,11 @@ class BaseGeekAIService {
         config: {
           ...config,
           appName: 'fitnessGeek',
-          // Specify Claude as preferred provider for food parsing
-          provider: 'anthropic',
-          // Fallback to Groq if Claude fails
-          fallbackOrder: ['anthropic', 'groq', 'gemini', 'together']
+          // Prefer Gemini 1.5 Flash
+          provider: 'gemini',
+          model: 'gemini-1.5-flash',
+          // Fallback order keeps others available
+          fallbackOrder: ['gemini', 'anthropic', 'groq', 'together']
         }
       }, {
         headers: {
@@ -50,48 +51,74 @@ class BaseGeekAIService {
     const prompt = this.buildFoodParsingPrompt(description, userContext);
     const response = await this.callAI(prompt, {
       maxTokens: 1000,
-      temperature: 0.3,
-      // Use Claude for food parsing - better at structured output and nutrition knowledge
-      provider: 'anthropic'
+      temperature: 0.2,
+      // Use Gemini 1.5 Flash
+      provider: 'gemini',
+      model: 'gemini-1.5-flash'
     }, userToken);
     return this.parseFoodAIResponse(response);
   }
 
   buildFoodParsingPrompt(description, userContext) {
-    return `You are a nutrition expert helping to parse natural language food descriptions into structured data.
+    return `You are a nutrition expert helping to parse natural language food descriptions into structured JSON data.
 
-User's dietary context: ${JSON.stringify(userContext)}
+    User's dietary context: ${JSON.stringify(userContext)}
 
-Please parse this food description: "${description}"
+    Please parse this food description: "${description}"
 
-Return ONLY a JSON object with this exact structure:
-{
-  "food_items": [
+    Return ONLY a valid JSON object following this EXACT structure (no explanations or extra text):
+
     {
-      "name": "Food name",
-      "servings": number,
-      "estimated_serving_size": "1 cup, 1 piece, etc.",
-      "nutrition": {
-        "calories_per_serving": number,
-        "protein_grams": number,
-        "carbs_grams": number,
-        "fat_grams": number,
-        "fiber_grams": number,
-        "sugar_grams": number
-      }
+      "food_items": [
+        {
+          "name": "Food name",
+          "servings": number,
+          "estimated_serving_size": "1 cup, 1 piece, 100 grams, etc.",
+          "nutrition": {
+            "calories_per_serving": number,
+            "protein_grams": number,
+            "carbs_grams": number,
+            "fat_grams": number,
+            "fiber_grams": number,
+            "sugar_grams": number
+          }
+        }
+      ],
+      "meal_type": "breakfast|lunch|dinner|snack",
+      "estimated_calories": number,
+      "confidence": "high|medium|low"
     }
-  ],
-  "meal_type": "breakfast|lunch|dinner|snack",
-  "estimated_calories": number,
-  "confidence": "high|medium|low"
-}
 
-Guidelines:
-- Estimate reasonable serving sizes and nutrition values
-- Use common food names
-- Consider user's dietary preferences
-- If uncertain about specific values, use reasonable estimates
-- Confidence should reflect how certain you are about the parsing`;
+    Guidelines:
+    - Nutrition values correspond to one serving.
+    - Round nutrition values to whole numbers (use one decimal for values under 1g).
+    - Use common food names.
+    - Use standard serving units.
+    - Respect user's dietary restrictions strictly.
+    - If uncertain about meal_type, default to "snack".
+    - Confidence should reflect parsing certainty.
+
+    Example output:
+    {
+      "food_items": [
+        {
+          "name": "Grilled chicken breast",
+          "servings": 1,
+          "estimated_serving_size": "4 oz",
+          "nutrition": {
+            "calories_per_serving": 180,
+            "protein_grams": 35,
+            "carbs_grams": 0,
+            "fat_grams": 4,
+            "fiber_grams": 0,
+            "sugar_grams": 0
+          }
+        }
+      ],
+      "meal_type": "lunch",
+      "estimated_calories": 180,
+      "confidence": "high"
+    }`;
   }
 
   parseFoodAIResponse(responseText) {
@@ -122,8 +149,8 @@ Guidelines:
       enabled: true,
       baseGeekUrl: this.baseGeekUrl,
       jwtSecretConfigured: !!this.jwtSecret,
-      preferredProvider: 'anthropic', // Claude 3.5 Sonnet
-      fallbackProvider: 'groq' // Groq Llama 3.1
+      preferredProvider: 'gemini', // Gemini 1.5 Flash
+      fallbackProvider: 'anthropic'
     };
   }
 }

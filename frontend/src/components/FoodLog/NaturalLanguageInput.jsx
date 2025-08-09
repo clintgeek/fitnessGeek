@@ -15,12 +15,18 @@ import {
   Restaurant as FoodIcon
 } from '@mui/icons-material';
 import { aiService } from '../../services/aiService.js';
+// QuantityUnitPicker removed for AI-specified serving sizes
+import SwapDialog from './SwapDialog.jsx';
+import { matcherService } from '../../services/matcherService.js';
+import ReasonablenessBanner from './ReasonablenessBanner.jsx';
 
 const NaturalLanguageInput = ({ onFoodsParsed, onError }) => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [parsedFoods, setParsedFoods] = useState(null);
   const [error, setError] = useState('');
+  const [swapOpen, setSwapOpen] = useState(false);
+  const [swapCandidates, setSwapCandidates] = useState([]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -152,6 +158,39 @@ const NaturalLanguageInput = ({ onFoodsParsed, onError }) => {
                   F: {food.nutrition.fat_grams}g
                 </Typography>
               </Box>
+
+              {/* Servings picker using AI-specified serving size */}
+              <Box sx={{ mt: 1, display: 'flex', gap: 1, alignItems: 'center' }}>
+                <TextField
+                  type="number"
+                  size="small"
+                  label="Servings"
+                  value={food.servings || 1}
+                  onChange={(e) => {
+                    const updated = { ...parsedFoods };
+                    updated.food_items[index] = { ...food, servings: Number(e.target.value) };
+                    setParsedFoods(updated);
+                  }}
+                  sx={{ width: 120 }}
+                />
+                <Chip label={food.estimated_serving_size || 'serving'} size="small" />
+              </Box>
+
+              {/* Reasonableness check */}
+              <ReasonablenessBanner
+                name={food.name}
+                calories={(food.nutrition?.calories_per_serving || 0) * (food.servings || 1)}
+                grams={0}
+              />
+
+              {/* Swap candidates trigger (placeholder) */}
+              <Box sx={{ mt: 1 }}>
+                <Button size="small" variant="text" onClick={async () => {
+                  const candidates = await matcherService.matchCandidates({ name: food.name, modifiers: food.modifiers || {} }, 10);
+                  setSwapCandidates(candidates);
+                  setSwapOpen(true);
+                }}>Swap</Button>
+              </Box>
             </Box>
           ))}
 
@@ -197,6 +236,25 @@ const NaturalLanguageInput = ({ onFoodsParsed, onError }) => {
           </Box>
         </Paper>
       )}
+
+      <SwapDialog open={swapOpen} candidates={swapCandidates} onClose={() => setSwapOpen(false)} onSelect={(c) => {
+        setSwapOpen(false);
+        // Replace the last opened item by name match fallback
+        if (parsedFoods?.food_items?.length) {
+          const updated = { ...parsedFoods };
+          const idx = updated.food_items.findIndex((f) => f.name === (swapCandidates?.[0]?.name) || f.name);
+          const target = idx >= 0 ? idx : 0;
+          updated.food_items[target] = {
+            ...updated.food_items[target],
+            name: c.name,
+            brand: c.brand,
+            source: c.source,
+            serving: c.serving,
+            nutrition: c.nutrition,
+          };
+          setParsedFoods(updated);
+        }
+      }} />
 
       {/* Help Text */}
       <Typography variant="body2" sx={{ color: '#666', fontStyle: 'italic' }}>

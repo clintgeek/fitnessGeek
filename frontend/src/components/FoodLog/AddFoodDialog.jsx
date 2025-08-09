@@ -39,7 +39,8 @@ const AddFoodDialog = ({
     carbs_grams: 0,
     fat_grams: 0
   });
-  const [activeTab, setActiveTab] = useState(0);
+  // Default to Auto
+  const [activeTab, setActiveTab] = useState(1);
 
   const handleFoodSelect = (food) => {
     setSelectedFood(food);
@@ -147,12 +148,6 @@ const AddFoodDialog = ({
           <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
             <Tabs value={activeTab} onChange={handleTabChange} sx={{ minHeight: 48 }}>
               <Tab
-                label="Search"
-                icon={<FoodIcon />}
-                iconPosition="start"
-                sx={{ minHeight: 48 }}
-              />
-              <Tab
                 label="Auto"
                 icon={<AIIcon />}
                 iconPosition="start"
@@ -165,11 +160,17 @@ const AddFoodDialog = ({
                 sx={{ minHeight: 48 }}
                 onClick={handleBarcodeTabClick}
               />
+              <Tab
+                label="Search"
+                icon={<FoodIcon />}
+                iconPosition="start"
+                sx={{ minHeight: 48 }}
+              />
             </Tabs>
           </Box>
 
           {/* Tab Content */}
-          {activeTab === 0 && (
+          {activeTab === 2 && (
             <>
               {!selectedFood ? (
                 <FoodSearch
@@ -258,14 +259,14 @@ const AddFoodDialog = ({
             </>
           )}
 
-          {activeTab === 1 && (
+          {activeTab === 0 && (
             <NaturalLanguageInput
               onFoodsParsed={handleAIFoodsParsed}
               onError={(error) => console.error('AI Error:', error)}
             />
           )}
 
-          {activeTab === 2 && (
+          {activeTab === 1 && (
             <Box sx={{ p: 3, textAlign: 'center' }}>
               <BarcodeIcon sx={{ fontSize: 64, color: '#6098CC', mb: 2 }} />
               <Typography variant="h6" sx={{ mb: 1 }}>
