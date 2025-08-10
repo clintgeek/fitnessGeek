@@ -151,13 +151,19 @@ const NutritionSummary = ({
                 justifyContent: 'center',
                 mb: 1
               }}>
-                <IconComponent
-                  sx={{
-                    color: item.color,
-                    fontSize: { xs: '1.25rem', sm: '1.5rem' },
-                    mr: 0.5
-                  }}
-                />
+                <Box sx={{
+                  bgcolor: item.color,
+                  color: '#fff',
+                  width: 28,
+                  height: 28,
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  mr: 0.75
+                }}>
+                  <IconComponent sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }} />
+                </Box>
                 <Typography
                   variant="caption"
                   sx={{

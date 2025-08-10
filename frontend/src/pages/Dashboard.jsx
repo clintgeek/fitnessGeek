@@ -23,15 +23,15 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useSettings } from '../hooks/useSettings.js';
 import { fitnessGeekService } from '../services/fitnessGeekService.js';
+import { goalsService } from '../services/goalsService.js';
 import { weightService } from '../services/weightService.js';
 import { bpService } from '../services/bpService.js';
 import { settingsService } from '../services/settingsService.js';
 import { streakService } from '../services/streakService.js';
-import {
-  MetricCard,
-  DashboardHeader,
-  NutritionSummaryCard
-} from '../components/Dashboard';
+import { MetricCard, DashboardHeader } from '../components/Dashboard';
+import NutritionSummary from '../components/FoodLog/NutritionSummary.jsx';
+import GarminSummaryCard from '../components/Dashboard/GarminSummaryCard.jsx';
+import { CircularProgress as Spinner } from '@mui/material';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -47,6 +47,8 @@ const Dashboard = () => {
   const [weeklyBP, setWeeklyBP] = useState(null);
   const [goals, setGoals] = useState(null);
   const [loginStreak, setLoginStreak] = useState({ current: 0, longest: 0 });
+  const [garminDaily, setGarminDaily] = useState(null);
+  const [macroTargets, setMacroTargets] = useState(null);
   const { dashboardSettings, loading: settingsLoading } = useSettings();
 
   // Load dashboard data
@@ -60,13 +62,17 @@ const Dashboard = () => {
           weightData,
           bpData,
           goalsData,
-          streakData
+          streakData,
+          garminData,
+          macrosData
         ] = await Promise.allSettled([
           fitnessGeekService.getTodaySummary(),
           weightService.getWeightStats(),
           bpService.getBPLogs({ limit: 7 }),
           settingsService.getSettings(),
-          streakService.getLoginStreak()
+          streakService.getLoginStreak(),
+          fitnessGeekService.getGarminDaily(),
+          goalsService.getDerivedMacros()
         ]);
 
         // Handle today's summary
@@ -117,9 +123,35 @@ const Dashboard = () => {
           }
         }
 
+        // Handle derived macros (protein/fat fixed, carbs-by-day)
+        if (macrosData.status === 'fulfilled' && macrosData.value) {
+          const resp = macrosData.value;
+          const payload = resp.data || resp; // apiService returns response.data
+          const today = payload?.today;
+          if (today) {
+            setMacroTargets({
+              protein: Math.round(today.protein_g || 0),
+              fat: Math.round(today.fat_g || 0),
+              carbs: Math.round(today.carbs_g || 0)
+            });
+            // Also set calorie goal to target_calories if present
+            const newGoals = {
+              nutrition: { goals: { calories: Math.round((today.target_calories ?? today.calories) || 0) } }
+            };
+            setGoals(newGoals);
+          } else {
+            setMacroTargets(null);
+          }
+        }
+
         // Handle login streak
         if (streakData.status === 'fulfilled' && streakData.value && streakData.value.success) {
           setLoginStreak(streakData.value.data);
+        }
+
+        // Handle Garmin
+        if (garminData.status === 'fulfilled' && garminData.value) {
+          setGarminDaily(garminData.value);
         }
 
       } catch (err) {
@@ -210,6 +242,7 @@ const Dashboard = () => {
                 progressValue={goals?.nutrition?.goals?.calories ?
                   Math.round(((todaySummary.totals?.calories || 0) / goals.nutrition.goals.calories) * 100) : null}
                 timeout={300}
+                onClick={() => navigate('/food-log')}
               />
             </Grid>
           )}
@@ -239,6 +272,7 @@ const Dashboard = () => {
                 icon={<WeightIcon />}
                 color="info"
                 timeout={400}
+                onClick={() => navigate('/weight')}
               >
                 {weightStats.totalChange && (
                   <Box sx={{
@@ -269,6 +303,7 @@ const Dashboard = () => {
                 icon={<BPIcon />}
                 color="error"
                 timeout={500}
+                onClick={() => navigate('/blood-pressure')}
               >
                 {weeklyBP && (
                   <Box sx={{
@@ -296,6 +331,7 @@ const Dashboard = () => {
                 icon={<StreakIcon />}
                 color="warning"
                 timeout={600}
+                onClick={() => navigate('/food-log')}
               >
                 <Box sx={{
                   p: 2,
@@ -315,14 +351,35 @@ const Dashboard = () => {
             </Grid>
           )}
 
-          {/* Nutrition Summary */}
+          {/* Nutrition Summary (reused from Food Log bottom card) */}
           {dashboardSettings.show_nutrition_today && todaySummary && (
             <Grid xs={12} sx={{ width: '100%', mb: 2 }}>
-              <NutritionSummaryCard
-                protein={todaySummary.totals?.protein_grams || 0}
-                carbs={todaySummary.totals?.carbs_grams || 0}
-                fat={todaySummary.totals?.fat_grams || 0}
-                timeout={700}
+              <NutritionSummary
+                summary={{
+                  calories: todaySummary.totals?.calories || 0,
+                  protein: todaySummary.totals?.protein_grams || 0,
+                  carbs: todaySummary.totals?.carbs_grams || 0,
+                  fat: todaySummary.totals?.fat_grams || 0,
+                  calorieGoal: goals?.nutrition?.goals?.calories || 0,
+                  proteinGoal: macroTargets?.protein || 0,
+                  carbsGoal: macroTargets?.carbs || 0,
+                  fatGoal: macroTargets?.fat || 0
+                }}
+                showGoals
+              />
+            </Grid>
+          )}
+
+          {/* Garmin Highlights in a unified card */}
+          {dashboardSettings.show_garmin_summary && garminDaily && (
+            <Grid xs={12} sx={{ width: '100%', mb: 2 }}>
+              <GarminSummaryCard
+                steps={garminDaily.steps}
+                activeCalories={garminDaily.activeCalories}
+                sleepMinutes={garminDaily.sleepMinutes}
+                restingHR={garminDaily.restingHR}
+                fetchedAt={garminDaily.fetchedAt}
+                lastSyncAt={garminDaily.lastSyncAt}
               />
             </Grid>
           )}

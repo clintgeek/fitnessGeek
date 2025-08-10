@@ -16,6 +16,7 @@ const DateNavigator = ({
   onPreviousDay,
   onNextDay,
   formatDate,
+  calorieCard = null,
   ...props
 }) => {
   const theme = useTheme();
@@ -28,8 +29,10 @@ const DateNavigator = ({
       {...props}
     >
       <Box sx={{
-        display: 'flex',
-        justifyContent: 'space-between',
+        display: 'grid',
+        gridTemplateColumns: 'auto 1fr auto',
+        gridTemplateRows: 'auto auto',
+        rowGap: 1,
         alignItems: 'center',
         backgroundColor: theme.palette.background.paper,
         borderRadius: 2,
@@ -50,7 +53,7 @@ const DateNavigator = ({
           <ChevronLeftIcon />
         </IconButton>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifySelf: 'center' }}>
           <Typography
             variant="h6"
             sx={{
@@ -76,6 +79,13 @@ const DateNavigator = ({
         >
           <ChevronRightIcon />
         </IconButton>
+
+        {/* Calorie summary spans full width below date row when provided */}
+        {calorieCard && (
+          <Box sx={{ gridColumn: '1 / span 3', pt: 0.5 }}>
+            {calorieCard}
+          </Box>
+        )}
       </Box>
     </Box>
   );

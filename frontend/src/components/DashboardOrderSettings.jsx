@@ -186,22 +186,32 @@ const DashboardOrderSettings = ({ settings, onSettingsChange, onOrderChange }) =
       icon: <FoodIcon />,
       label: 'Nutrition Summary',
       description: 'Show today\'s nutrition breakdown'
+    },
+    garmin_summary: {
+      icon: <BPIcon />,
+      label: 'Garmin Summary',
+      description: 'Show resting HR, steps, active kcal, and sleep'
     }
   };
 
-  // Get visible cards based on settings
-  const getVisibleCards = () => {
-    const cardOrder = settings?.card_order || [
-      'calories_today',
-      'current_weight',
-      'blood_pressure',
-      'login_streak',
-      'nutrition_today'
-    ];
+  // Normalize order to include new cards and default visible=true for new toggles
+  const defaultOrder = [
+    'calories_today',
+    'current_weight',
+    'blood_pressure',
+    'login_streak',
+    'nutrition_today',
+    'garmin_summary'
+  ];
+  const normalizedOrder = (settings?.card_order && settings.card_order.length)
+    ? [...settings.card_order, ...Object.keys(cardConfigs).filter(k => !settings.card_order.includes(k))]
+    : defaultOrder;
 
-    return cardOrder.filter(cardKey => {
+  const getVisibleCards = () => {
+    return normalizedOrder.filter(cardKey => {
       const settingKey = `show_${cardKey}`;
-      return settings?.[settingKey] && cardConfigs[cardKey]; // Only include if card exists in config
+      const isVisible = settings?.[settingKey];
+      return (isVisible === undefined ? true : isVisible) && !!cardConfigs[cardKey];
     });
   };
 
@@ -216,13 +226,7 @@ const DashboardOrderSettings = ({ settings, onSettingsChange, onOrderChange }) =
       const reorderedCards = arrayMove(visibleCards, oldIndex, newIndex);
 
       // Update the full card order while preserving hidden cards
-      const cardOrder = settings?.card_order || [
-        'calories_today',
-        'current_weight',
-        'blood_pressure',
-        'login_streak',
-        'nutrition_today'
-      ];
+      const cardOrder = normalizedOrder;
 
       const hiddenCards = cardOrder.filter(cardKey => {
         const settingKey = `show_${cardKey}`;
@@ -288,18 +292,20 @@ const DashboardOrderSettings = ({ settings, onSettingsChange, onOrderChange }) =
       </DndContext>
 
       {/* Hidden Cards Section */}
-      {(settings?.card_order || []).some(cardKey => {
+      {normalizedOrder.some(cardKey => {
         const settingKey = `show_${cardKey}`;
-        return !settings?.[settingKey];
+        const isVisible = settings?.[settingKey];
+        return !(isVisible === undefined ? true : isVisible);
       }) && (
         <Box>
           <Typography variant="subtitle2" sx={{ mb: 2, color: 'text.secondary' }}>
             Hidden Cards
           </Typography>
-          {(settings?.card_order || [])
+          {normalizedOrder
             .filter(cardKey => {
               const settingKey = `show_${cardKey}`;
-              return !settings?.[settingKey] && cardConfigs[cardKey]; // Only show if card exists in config
+              const isVisible = settings?.[settingKey];
+              return !(isVisible === undefined ? true : isVisible) && cardConfigs[cardKey];
             })
             .map((cardKey) => (
               <Paper

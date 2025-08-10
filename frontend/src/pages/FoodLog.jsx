@@ -12,6 +12,7 @@ import {
   Collapse
 } from '@mui/material';
 import NutritionSummary from '../components/FoodLog/NutritionSummary.jsx';
+import CalorieSummary from '../components/FoodLog/CalorieSummary.jsx';
 import MealSection from '../components/FoodLog/MealSection.jsx';
 import SaveMealDialog from '../components/FoodLog/SaveMealDialog.jsx';
 import EditLogDialog from '../components/FoodLog/EditLogDialog.jsx';
@@ -22,6 +23,7 @@ import {
 import { useFoodLog } from '../hooks/useFoodLog.js';
 import { fitnessGeekService } from '../services/fitnessGeekService.js';
 import { settingsService } from '../services/settingsService.js';
+import { goalsService } from '../services/goalsService.js';
 
 const FoodLog = () => {
   const [selectedDate, setSelectedDate] = useState(() => fitnessGeekService.formatDate(new Date()));
@@ -58,6 +60,7 @@ const FoodLog = () => {
   const [savingGoal, setSavingGoal] = useState(false);
   const [goalSavedMsg, setGoalSavedMsg] = useState('');
   const [showCaloriePanel, setShowCaloriePanel] = useState(false);
+  const [baseAdd, setBaseAdd] = useState({ base: 0, add: 0 });
 
   useEffect(() => {
     if (todayCalorieGoal > 0) setGoalInput(String(todayCalorieGoal));
@@ -101,6 +104,21 @@ const FoodLog = () => {
       setSavingGoal(false);
     }
   };
+
+  // Load derived macros to show base(+add)
+  useEffect(() => {
+    (async () => {
+      try {
+        const resp = await goalsService.getDerivedMacros();
+        const data = resp?.data || resp?.data?.data || resp;
+        if (data?.today) {
+          setBaseAdd({ base: Math.round(data.today.base_calories || 0), add: Math.round(data.today.activity_add_kcal || 0) });
+        }
+      } catch (e) {
+        // ignore
+      }
+    })();
+  }, [selectedDate]);
 
   const handleAddFood = (mealType) => {
     setSelectedMealType(mealType);
@@ -200,12 +218,33 @@ const FoodLog = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      {/* Date Navigation */}
+      {/* Date Navigation with compact calorie card */}
       <DateNavigator
         selectedDate={selectedDate}
         onPreviousDay={goToPreviousDay}
         onNextDay={goToNextDay}
         formatDate={formatDate}
+        calorieCard={
+          <CalorieSummary
+            calories={nutritionSummary?.calories || 0}
+            goal={nutritionSummary?.calorieGoal || 0}
+            base={baseAdd.base}
+            add={baseAdd.add}
+            onSettings={() => {
+              setShowCaloriePanel(prev => {
+                const next = !prev;
+                if (!prev && typeof window !== 'undefined') {
+                  setTimeout(() => {
+                    const panel = document.getElementById('calorie-goal-panel');
+                    if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }, 0);
+                }
+                return next;
+              });
+            }}
+            embedded
+          />
+        }
       />
 
       {/* Calorie Goal Panel (toggle) */}
@@ -240,25 +279,7 @@ const FoodLog = () => {
         </Card>
       </Collapse>
 
-      {/* Nutrition Summary */}
-      <Box sx={{ mb: 3 }}>
-        <NutritionSummary
-          summary={nutritionSummary}
-          showGoals={true}
-          onCalorieSettingsClick={() => {
-            setShowCaloriePanel(prev => {
-              const next = !prev;
-              if (!prev && typeof window !== 'undefined') {
-                setTimeout(() => {
-                  const panel = document.getElementById('calorie-goal-panel');
-                  if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }, 0);
-              }
-              return next;
-            });
-          }}
-        />
-      </Box>
+      {/* Removed standalone top calorie card; it's now embedded under the date picker */}
 
       {/* Meal Sections */}
       {(['breakfast', 'lunch', 'dinner', 'snack']).map((mealType) => (
@@ -274,6 +295,22 @@ const FoodLog = () => {
           />
         </Box>
       ))}
+
+      {/* Nutrition Summary moved to bottom for cleaner mobile layout */}
+      <Box sx={{ mt: 3 }}>
+        <NutritionSummary summary={nutritionSummary} showGoals={true} onCalorieSettingsClick={() => {
+          setShowCaloriePanel(prev => {
+            const next = !prev;
+            if (!prev && typeof window !== 'undefined') {
+              setTimeout(() => {
+                const panel = document.getElementById('calorie-goal-panel');
+                if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }, 0);
+            }
+            return next;
+          });
+        }} />
+      </Box>
 
       {/* Add Food Dialog */}
       <AddFoodDialog

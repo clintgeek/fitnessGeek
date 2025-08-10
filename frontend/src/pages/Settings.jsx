@@ -47,6 +47,8 @@ import DashboardOrderSettings from '../components/DashboardOrderSettings';
 
 const Settings = () => {
   const [settings, setSettings] = useState(null);
+  const [garminUsername, setGarminUsername] = useState('');
+  const [garminPassword, setGarminPassword] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -61,7 +63,19 @@ const Settings = () => {
     try {
       setLoading(true);
       const response = await settingsService.getSettings();
-      setSettings(response.data);
+      const loaded = response.data;
+      // Initialize local Garmin creds (masking password from API)
+      const g = (loaded.garmin || settingsService.getDefaultGarminSettings());
+      setGarminUsername(g.username || '');
+      setGarminPassword('');
+      setSettings({
+        ...loaded,
+        garmin: {
+          enabled: !!g.enabled,
+          username: g.username || ''
+          // omit password from state we display, managed via local garminPassword
+        }
+      });
     } catch (error) {
       console.error('Error loading settings:', error);
       setError('Failed to load settings');
@@ -70,7 +84,8 @@ const Settings = () => {
         dashboard: settingsService.getDefaultDashboardSettings(),
         theme: 'light',
         notifications: { enabled: true, daily_reminder: true, goal_reminders: true },
-        units: { weight: 'lbs', height: 'ft' }
+        units: { weight: 'lbs', height: 'ft' },
+        garmin: settingsService.getDefaultGarminSettings()
       };
       console.log('Settings - defaultSettings:', defaultSettings);
       setSettings(defaultSettings);
@@ -132,7 +147,16 @@ const Settings = () => {
       setError('');
       setSuccess('');
 
-      await settingsService.updateSettings(settings);
+      const payload = {
+        ...settings,
+        garmin: {
+          enabled: settings.garmin?.enabled || false,
+          username: garminUsername || '',
+          // only send password if provided
+          ...(garminPassword ? { password: garminPassword } : {})
+        }
+      };
+      await settingsService.updateSettings(payload);
       setSuccess('Settings saved successfully!');
 
       // Clear success message after 3 seconds
@@ -323,6 +347,64 @@ const Settings = () => {
               </Select>
             </FormControl>
           </Box>
+        </CardContent>
+      </Card>
+
+      {/* Garmin Integration */}
+      <Card sx={{ width: '100%', mb: 2 }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            <BPIcon sx={{ mr: 1, color: '#6098CC' }} />
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              Garmin Integration
+            </Typography>
+          </Box>
+
+          <FormControlLabel
+            control={
+              <Switch
+                checked={!!settings.garmin?.enabled}
+                onChange={(e) => setSettings(prev => ({
+                  ...prev,
+                  garmin: {
+                    ...(prev.garmin || {}),
+                    enabled: e.target.checked
+                  }
+                }))}
+              />
+            }
+            label="Enable Garmin"
+            sx={{ mb: 2 }}
+          />
+
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+            <FormControl fullWidth>
+              <InputLabel shrink>Garmin Username</InputLabel>
+              <input
+                type="text"
+                value={garminUsername}
+                onChange={(e) => setGarminUsername(e.target.value)}
+                placeholder="your@email.com"
+                style={{ padding: '14px', borderRadius: 4, border: '1px solid rgba(0,0,0,0.23)' }}
+                disabled={!settings.garmin?.enabled}
+              />
+            </FormControl>
+
+            <FormControl fullWidth>
+              <InputLabel shrink>Garmin Password</InputLabel>
+              <input
+                type="password"
+                value={garminPassword}
+                onChange={(e) => setGarminPassword(e.target.value)}
+                placeholder={settings.garmin?.enabled ? 'Enter to update (leave blank to keep)' : 'Disabled'}
+                style={{ padding: '14px', borderRadius: 4, border: '1px solid rgba(0,0,0,0.23)' }}
+                disabled={!settings.garmin?.enabled}
+              />
+            </FormControl>
+          </Box>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            Password is never shown. Leave blank to keep the current password.
+          </Typography>
         </CardContent>
       </Card>
 

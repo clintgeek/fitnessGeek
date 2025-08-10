@@ -186,7 +186,7 @@ const FoodSearch = ({
 
   const renderFoodItem = (food) => {
     return (
-      <ListItem
+        <ListItem
         key={food._id || food.id}
         onClick={() => handleFoodClick(food)}
         sx={{
@@ -199,41 +199,42 @@ const FoodSearch = ({
             borderBottom: 'none'
           }
         }}
+          component="div"
       >
         <ListItemText
           primary={
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <Box component="span" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <Box sx={{ flex: 1 }}>
-                <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                <Box component="span" sx={{ fontWeight: 500, fontSize: '1rem' }}>
                   {food.name}
-                </Typography>
+                </Box>
                 {food.brand && (
-                  <Typography variant="body2" sx={{ color: '#666', fontSize: '0.875rem' }}>
+                <Box component="span" sx={{ color: '#666', fontSize: '0.875rem' }}>
                     {food.brand}
-                  </Typography>
+                </Box>
                 )}
               </Box>
               <Box sx={{ textAlign: 'right', ml: 2 }}>
-                <Typography variant="body2" sx={{ color: '#4caf50', fontWeight: 600 }}>
+                <Box component="span" sx={{ color: '#4caf50', fontWeight: 600, fontSize: '0.875rem' }}>
                   {Math.round(food.nutrition?.calories_per_serving || 0)} cal
-                </Typography>
-                <Typography variant="caption" sx={{ color: '#666' }}>
+                </Box>
+                <Box component="span" sx={{ color: '#666', fontSize: '0.75rem', display: 'block' }}>
                   {getSourceName(food.source)}
-                </Typography>
+                </Box>
               </Box>
             </Box>
           }
           secondary={
-            <Box sx={{ display: 'flex', gap: 2, mt: 0.5 }}>
-              <Typography variant="body2" sx={{ color: '#666' }}>
+            <Box component="span" sx={{ display: 'flex', gap: 2, mt: 0.5 }}>
+              <Box component="span" sx={{ color: '#666', fontSize: '0.875rem' }}>
                 P: {food.nutrition?.protein_grams || 0}g
-              </Typography>
-              <Typography variant="body2" sx={{ color: '#666' }}>
+              </Box>
+              <Box component="span" sx={{ color: '#666', fontSize: '0.875rem' }}>
                 C: {food.nutrition?.carbs_grams || 0}g
-              </Typography>
-              <Typography variant="body2" sx={{ color: '#666' }}>
+              </Box>
+              <Box component="span" sx={{ color: '#666', fontSize: '0.875rem' }}>
                 F: {food.nutrition?.fat_grams || 0}g
-              </Typography>
+              </Box>
             </Box>
           }
         />
@@ -278,17 +279,13 @@ const FoodSearch = ({
           <Typography variant="subtitle2" sx={{ mb: 1, color: '#666' }}>
             Search Results
           </Typography>
-          <List sx={{ p: 0, bgcolor: '#fff', borderRadius: 2, border: '1px solid #e0e0e0' }}>
+          <List sx={{ p: 0, bgcolor: '#fff', borderRadius: 2, border: '1px solid #e0e0e0' }} component="div">
             {searchResults.length > 0 ? (
               searchResults.map(renderFoodItem)
             ) : (
-              <ListItem sx={{ py: 3, textAlign: 'center' }}>
+              <ListItem sx={{ py: 3, textAlign: 'center' }} component="div">
                 <ListItemText
-                  primary={
-                    <Typography variant="body2" sx={{ color: '#666' }}>
-                      No foods found
-                    </Typography>
-                  }
+                  primary={<Box component="span" sx={{ color: '#666', fontSize: '0.875rem' }}>No foods found</Box>}
                 />
               </ListItem>
             )}
@@ -302,7 +299,7 @@ const FoodSearch = ({
           <Typography variant="subtitle2" sx={{ mb: 1, color: '#666' }}>
             Recent Foods
           </Typography>
-          <List sx={{ p: 0, bgcolor: '#fff', borderRadius: 2, border: '1px solid #e0e0e0' }}>
+          <List sx={{ p: 0, bgcolor: '#fff', borderRadius: 2, border: '1px solid #e0e0e0' }} component="div">
             {recentFoods.map(renderFoodItem)}
           </List>
         </Box>

@@ -60,16 +60,17 @@ const MetricCard = ({
 
   return (
     <Fade in timeout={timeout}>
-      <Card sx={{
+      <Card onClick={props.onClick} sx={{
         width: '100%',
         minHeight: 120,
         display: 'flex',
         flexDirection: 'column',
-        background: `linear-gradient(135deg, ${theme.palette.grey[50]} 0%, ${theme.palette.grey[100]} 100%)`,
+        backgroundColor: theme.palette.background.paper,
         boxShadow: theme.shadows[1],
         borderRadius: 2,
         position: 'relative',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        cursor: props.onClick ? 'pointer' : 'default'
       }}>
         <CardContent sx={{
           p: 3,
@@ -80,8 +81,8 @@ const MetricCard = ({
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, flex: 1 }}>
             <Avatar
               sx={{
-                bgcolor: colorConfig.bgcolor,
-                color: colorConfig.iconColor,
+                bgcolor: colorConfig.iconColor,
+                color: '#fff',
                 mr: 2,
                 width: { xs: 40, sm: 48 },
                 height: { xs: 40, sm: 48 }

@@ -137,7 +137,6 @@ foodItemSchema.statics.findOrCreate = async function(foodData, userId = null) {
     const existing = await this.findOne({
       name: foodData.name,
       brand: foodData.brand,
-      user_id: userId,
       is_deleted: false
     });
     if (existing) return existing;
@@ -163,7 +162,7 @@ foodItemSchema.statics.findOrCreate = async function(foodData, userId = null) {
     },
     source: foodData.source || 'custom',
     source_id: foodData.source_id,
-    user_id: userId
+    user_id: null
   });
 
   return await foodItem.save();

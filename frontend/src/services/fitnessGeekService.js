@@ -181,6 +181,30 @@ export const fitnessGeekService = {
     }
   },
 
+  // ===== GARMIN =====
+
+  getGarminDaily: async (date) => {
+    try {
+      const response = await apiService.get(`/fitness/garmin/daily/${date || ''}`);
+      return response.data?.data || response.data;
+    } catch (error) {
+      console.error('Error getting Garmin daily:', error);
+      throw error;
+    }
+  },
+
+  get: (path) => apiService.get(path),
+
+  pushWeightToGarmin: async ({ date, weightLbs, timezone }) => {
+    try {
+      const response = await apiService.post('/fitness/garmin/weight', { date, weightLbs, timezone });
+      return response;
+    } catch (error) {
+      console.error('Error pushing weight to Garmin:', error);
+      throw error;
+    }
+  },
+
   // ===== MEALS =====
 
   // Get all meals

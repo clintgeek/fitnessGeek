@@ -121,8 +121,8 @@ const MealSection = ({
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <Avatar
             sx={{
-              bgcolor: color.light,
-              color: color.main,
+              bgcolor: color.main,
+              color: '#ffffff',
               width: { xs: 36, sm: 40 },
               height: { xs: 36, sm: 40 }
             }}

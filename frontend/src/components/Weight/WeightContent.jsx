@@ -53,8 +53,16 @@ const WeightContent = ({
     return 'all';
   };
 
-  // Check if goal time range should be available
-  const isGoalTimeRangeAvailable = weightGoal && weightGoal.enabled && weightGoal.startDate;
+  // Check if goal time range should be available (be tolerant to missing fields)
+  // Expose Goal mode only when wizard goal is fully defined
+  const isGoalTimeRangeAvailable = Boolean(
+    weightGoal &&
+    weightGoal.enabled &&
+    weightGoal.startDate &&
+    weightGoal.goalDate &&
+    (weightGoal.startWeight != null) &&
+    (weightGoal.targetWeight != null)
+  );
 
   const [timeRangeState, setTimeRangeState] = useState(() => {
     // If goal is available, default to goal regardless of data points
@@ -87,9 +95,9 @@ const WeightContent = ({
     const mostRecentDate = new Date(sortedData[0].log_date);
 
     // Handle goal time range
-    if (timeRangeState === 'goal' && weightGoal && weightGoal.enabled && weightGoal.startDate) {
+    if (timeRangeState === 'goal' && weightGoal && weightGoal.enabled && weightGoal.startDate && weightGoal.goalDate) {
       const goalStartDate = new Date(weightGoal.startDate);
-      const goalEndDate = weightGoal.goalDate ? new Date(weightGoal.goalDate) : new Date();
+      const goalEndDate = new Date(weightGoal.goalDate);
 
       return weightLogs
         .filter(item => {
@@ -246,7 +254,7 @@ const WeightContent = ({
         <Box sx={{ mb: 3 }}>
           <WeightChartNivo
             data={filteredWeightLogs}
-            yAxisLabel={`Weight (${unit})`}
+            unit={unit}
             goalLine={Boolean(weightGoal && weightGoal.enabled && timeRangeState === 'goal')}
             startWeight={weightGoal?.startWeight}
             targetWeight={weightGoal?.targetWeight}

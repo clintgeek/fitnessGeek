@@ -26,11 +26,11 @@ router.get('/', async (req, res) => {
     let meals;
 
     if (search) {
-      meals = await Meal.searchMeals(userId, search);
+      meals = await Meal.searchMeals(search);
     } else if (meal_type) {
-      meals = await Meal.getMealsByType(userId, meal_type);
+      meals = await Meal.getMealsByType(meal_type);
     } else {
-      meals = await Meal.getActiveMeals(userId);
+      meals = await Meal.getActiveMeals();
     }
 
     logger.info('Meals retrieved', {
@@ -61,11 +61,9 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
 
     const meal = await Meal.findOne({
       _id: id,
-      user_id: userId,
       is_deleted: false
     }).populate('food_items.food_item_id');
 
@@ -349,7 +347,6 @@ router.post('/:id/add-to-log', async (req, res) => {
     // Get the meal
     const meal = await Meal.findOne({
       _id: id,
-      user_id: userId,
       is_deleted: false
     }).populate('food_items.food_item_id');
 

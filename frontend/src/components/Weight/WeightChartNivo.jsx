@@ -15,43 +15,40 @@ const WeightChartNivo = ({ data, goalLine, startWeight, targetWeight, startDate,
 
   // Transform data for Nivo
   const chartData = useMemo(() => {
-    if (!data || data.length === 0) return [];
+    const result = [];
 
-    // Sort data by date
-    const sortedData = [...data]
-      .sort((a, b) => new Date(a.log_date) - new Date(b.log_date))
-      .map(item => {
-        try {
-          return {
-            date: goalLine && startDate && goalDate ?
-              new Date(item.log_date) :
-              new Date(item.log_date).toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric'
-              }),
-            value: parseFloat(item.weight_value) || 0,
-            fullDate: item.log_date
-          };
-        } catch (error) {
-          console.error('Error processing weight data item:', item, error);
-          return null;
-        }
-      })
-      .filter(item => item !== null);
+    if (data && data.length > 0) {
+      // Sort data by date and map for chart
+      const sortedData = [...data]
+        .sort((a, b) => new Date(a.log_date) - new Date(b.log_date))
+        .map(item => {
+          try {
+            return {
+              date: goalLine && startDate && goalDate ?
+                new Date(item.log_date) :
+                new Date(item.log_date).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric'
+                }),
+              value: parseFloat(item.weight_value) || 0,
+              fullDate: item.log_date
+            };
+          } catch (error) {
+            console.error('Error processing weight data item:', item, error);
+            return null;
+          }
+        })
+        .filter(item => item !== null);
 
-    const result = [
-      {
+      result.push({
         id: 'weight',
         color: theme.palette.primary.main,
-        data: sortedData.map(item => ({
-          x: item.date,
-          y: item.value
-        }))
-      }
-    ];
+        data: sortedData.map(item => ({ x: item.date, y: item.value }))
+      });
+    }
 
-    // Add goal line if available
-    if (goalLine && startWeight && targetWeight && startDate && goalDate) {
+    // Add goal line only for goal display: always two points, start and finish of goal period
+    if (goalLine && startWeight != null && targetWeight != null && startDate && goalDate) {
       try {
         const firstDate = new Date(startDate);
         const goalDateObj = new Date(goalDate);
@@ -86,7 +83,7 @@ const WeightChartNivo = ({ data, goalLine, startWeight, targetWeight, startDate,
 
 
 
-  if (chartData.length === 0) {
+  if (chartData.length === 0 && !(goalLine && startDate && goalDate && startWeight != null && targetWeight != null)) {
     return (
       <Card sx={{
         width: '100%',
@@ -123,15 +120,21 @@ const WeightChartNivo = ({ data, goalLine, startWeight, targetWeight, startDate,
       <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
         <Box sx={{ height: isMobile ? 250 : 300 }}>
           <ResponsiveLine
-            data={chartData}
+            data={chartData.length > 0 ? chartData : [
+              { id: 'weight', color: theme.palette.primary.main, data: [] },
+              { id: 'goal', color: theme.palette.secondary.main, data: [
+                { x: new Date(startDate), y: parseFloat(startWeight) || 0 },
+                { x: new Date(goalDate), y: parseFloat(targetWeight) || 0 }
+              ]}
+            ]}
             margin={{ top: 20, right: 30, left: 70, bottom: 50 }}
             xScale={{
               type: goalLine && startDate && goalDate ? 'time' : 'point',
               ...(goalLine && startDate && goalDate ? {
                 format: '%b %d',
                 useUTC: false,
-                min: new Date(startDate),
-                max: new Date(goalDate)
+                min: startDate ? new Date(startDate) : undefined,
+                max: goalDate ? new Date(goalDate) : undefined
               } : {})
             }}
             yScale={{

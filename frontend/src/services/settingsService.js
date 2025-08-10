@@ -58,6 +58,7 @@ export const settingsService = {
     show_calories_today: true,
     show_login_streak: true,
     show_nutrition_today: true,
+    show_garmin_summary: true,
     show_quick_actions: true,
     show_weight_goal: true,
     show_nutrition_goal: true,
@@ -67,6 +68,7 @@ export const settingsService = {
       'calories_today',
       'login_streak',
       'nutrition_today',
+      'garmin_summary',
       'quick_actions',
       'weight_goal',
       'nutrition_goal'
@@ -82,5 +84,12 @@ export const settingsService = {
       nutrition_analysis: true,
       goal_recommendations: true
     }
+  }),
+
+  // Get default Garmin settings
+  getDefaultGarminSettings: () => ({
+    enabled: false,
+    username: '',
+    password: ''
   })
 };

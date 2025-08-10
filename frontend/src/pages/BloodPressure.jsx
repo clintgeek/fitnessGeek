@@ -16,6 +16,8 @@ import BPChartNivo from '../components/BloodPressure/BPChartNivo.jsx';
 import QuickAddBP from '../components/BloodPressure/QuickAddBP.jsx';
 import BPLogList from '../components/BloodPressure/BPLogList.jsx';
 import BPReport from '../components/BloodPressure/BPReport.jsx';
+import BPHRChart from '../components/BloodPressure/BPHRChart.jsx';
+import { fitnessGeekService } from '../services/fitnessGeekService.js';
 import { bpService } from '../services/bpService.js';
 import { getTodayLocal, formatDateLocal } from '../utils/dateUtils.js';
 
@@ -27,6 +29,7 @@ const BloodPressure = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showReport, setShowReport] = useState(false);
+  const [hrSeries, setHrSeries] = useState([]);
 
   // Calculate the best default time range based on available data
   const getBestTimeRange = (data) => {
@@ -118,6 +121,7 @@ const BloodPressure = () => {
   // Load BP data on mount
   useEffect(() => {
     loadBPData();
+    loadHRSeries();
   }, []);
 
   const loadBPData = async () => {
@@ -134,6 +138,19 @@ const BloodPressure = () => {
       console.error('Error loading BP data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadHRSeries = async (date) => {
+    try {
+      const today = new Date();
+      const local = new Date(today.getTime() - today.getTimezoneOffset() * 60000);
+      const ymd = (date || local.toISOString().split('T')[0]);
+      const resp = await fitnessGeekService.get(`/fitness/garmin/heart-rate/${ymd}`);
+      const data = resp.data || resp?.data?.data || resp;
+      if (data && data.series) setHrSeries(data.series);
+    } catch (e) {
+      console.warn('Failed to load HR series:', e.message);
     }
   };
 
@@ -381,6 +398,13 @@ const BloodPressure = () => {
               title="Blood Pressure Trend"
             />
           </Box>
+
+          {/* Heart Rate series from Garmin */}
+          {hrSeries && hrSeries.length > 0 && (
+            <Box sx={{ mb: 3, px: { xs: 1, sm: 2 } }}>
+              <BPHRChart data={hrSeries} title="Heart Rate (Garmin)" />
+            </Box>
+          )}
         </>
       )}
 

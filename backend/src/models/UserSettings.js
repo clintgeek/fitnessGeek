@@ -62,6 +62,32 @@ const userSettingsSchema = new mongoose.Schema({
     enum: ['light', 'dark', 'auto'],
     default: 'light'
   },
+  // Integrations
+  garmin: {
+    enabled: {
+      type: Boolean,
+      default: false
+    },
+    username: {
+      type: String,
+      default: undefined
+    },
+    password: {
+      type: String,
+      default: undefined
+    },
+    oauth1_token: {
+      type: mongoose.Schema.Types.Mixed,
+      default: undefined
+    },
+    oauth2_token: {
+      type: mongoose.Schema.Types.Mixed,
+      default: undefined
+    },
+    last_connected_at: {
+      type: Date
+    }
+  },
   notifications: {
     enabled: {
       type: Boolean,
@@ -84,7 +110,17 @@ const userSettingsSchema = new mongoose.Schema({
     target_weight: { type: Number },
     activity_level: { type: String },
     weight_change_rate: { type: Number },
-    plan_type: { type: String, enum: ['standard', 'weekender', 'auto', 'stepFlex'], default: 'standard' },
+    plan_type: { type: String, enum: ['standard', 'weekender', 'auto', 'fixed', 'weekly'], default: 'standard' },
+    calorie_target_mode: { type: String, enum: ['auto', 'weekly', 'fixed', 'standard'], default: 'standard' },
+    // Auto rules
+    auto_base_calories: { type: Number },
+    fixed_calories: { type: Number },
+    activity_eatback_fraction: { type: Number, default: 0.6 },
+    activity_eatback_cap_kcal: { type: Number, default: 500 },
+    protein_g_per_lb_goal: { type: Number, default: 0.8 },
+    fat_g_per_lb_goal: { type: Number, default: 0.35 },
+    goal_weight_lbs: { type: Number },
+    show_adjustment: { type: Boolean, default: true },
     daily_calorie_target: { type: Number },
     weekly_schedule: { type: [Number], default: undefined }, // 7 values Mon..Sun
     min_safe_calories: { type: Number },
@@ -92,6 +128,15 @@ const userSettingsSchema = new mongoose.Schema({
     tdee: { type: Number },
     timeline_weeks: { type: Number },
     estimated_end_date: { type: Date }
+  },
+  // Weight goal
+  weight_goal: {
+    enabled: { type: Boolean, default: false },
+    start_weight: { type: Number },
+    target_weight: { type: Number },
+    start_date: { type: Date },
+    goal_date: { type: Date },
+    is_active: { type: Boolean, default: true }
   },
   units: {
     weight: {

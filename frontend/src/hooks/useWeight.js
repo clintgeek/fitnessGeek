@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { weightService } from '../services/weightService';
-import { goalsService } from '../services/goalsService';
+// Legacy goals removed
+import { settingsService } from '../services/settingsService.js';
 
 export const useWeight = () => {
   const [weightLogs, setWeightLogs] = useState([]);
@@ -21,20 +22,69 @@ export const useWeight = () => {
         setAutoCloseMessage('Failed to load weight logs', setError);
       }
 
-      // Load goals from backend
+      // Load goals from settings wizard (legacy removed)
       try {
-        const goalsResponse = await goalsService.getGoals();
-        if (goalsResponse && goalsResponse.data && goalsResponse.data.weight) {
-          // Convert backend format to frontend format
-          const backendWeightGoal = goalsResponse.data.weight;
-          setWeightGoal({
-            ...backendWeightGoal,
-            enabled: backendWeightGoal.is_active // Convert is_active to enabled
-          });
+        const settingsResp = await settingsService.getSettings();
+        const settingsData = settingsResp?.data || settingsResp?.data?.data || settingsResp;
+        // Debug: log settings payload
+        try {
+          // Avoid logging huge trees – pick likely locations
+          console.log('[useWeight] settings keys:', Object.keys(settingsData || {}));
+          console.log('[useWeight] settings.weight_goal:', settingsData?.weight_goal);
+          console.log('[useWeight] settings.goals?.weight_goal:', settingsData?.goals?.weight_goal);
+          console.log('[useWeight] settings.wizard?.weight_goal:', settingsData?.wizard?.weight_goal);
+          console.log('[useWeight] settings.fitness?.weight_goal:', settingsData?.fitness?.weight_goal);
+        } catch (e) {
+          console.warn('[useWeight] Failed to log settings', e);
+        }
+        // Support multiple possible nesting/keys for weight_goal
+        const wgRaw = settingsData?.weight_goal
+          || settingsData?.goals?.weight_goal
+          || settingsData?.wizard?.weight_goal
+          || settingsData?.fitness?.weight_goal;
+
+        const mapWeightGoal = (wgCandidate) => {
+          if (!wgCandidate) return null;
+          const enabled = (wgCandidate.enabled ?? wgCandidate.is_active ?? true) === true;
+          const startWeight = wgCandidate.start_weight ?? wgCandidate.startWeight ?? null;
+          const targetWeight = wgCandidate.target_weight ?? wgCandidate.targetWeight ?? null;
+          const startDate = wgCandidate.start_date ?? wgCandidate.startDate ?? null;
+          const goalDate = wgCandidate.estimated_end_date ?? wgCandidate.goal_date ?? wgCandidate.goalDate ?? null;
+          return { enabled, startWeight, targetWeight, startDate, goalDate };
+        };
+
+        // Map both weight_goal and nutrition_goal, prefer the one with usable data
+        const wgMapped = mapWeightGoal(wgRaw);
+        const ng = settingsData?.nutrition_goal;
+        const ngMapped = ng ? {
+          enabled: Boolean(ng.enabled),
+          startWeight: ng.start_weight ?? null,
+          targetWeight: ng.target_weight ?? null,
+          startDate: ng.start_date ?? null,
+          goalDate: ng.estimated_end_date ?? null
+        } : null;
+
+        console.log('[useWeight] wgRaw:', wgRaw);
+        console.log('[useWeight] wgMapped:', wgMapped);
+        console.log('[useWeight] ngMapped:', ngMapped);
+
+        // Choose goal source:
+        // - If weight_goal has both start/target OR explicitly enabled, use it
+        // - Otherwise if nutrition_goal is enabled (and has targets), use it
+        // - Else, no goal
+        let mapped = null;
+        const wgUsable = wgMapped && (wgMapped.enabled || (wgMapped.startWeight != null && wgMapped.targetWeight != null));
+        const ngUsable = ngMapped && (ngMapped.enabled || (ngMapped.startWeight != null && ngMapped.targetWeight != null));
+        if (wgUsable) mapped = wgMapped; else if (ngUsable) mapped = ngMapped;
+
+        if (mapped && mapped.enabled) {
+          setWeightGoal(mapped);
+        } else {
+          setWeightGoal(null);
         }
       } catch (goalsError) {
-        console.error('Error loading goals:', goalsError);
-        // Don't set error for goals failure, just log it
+        console.error('Error loading weight goals:', goalsError);
+        setWeightGoal(null);
       }
     } catch (error) {
       setAutoCloseMessage('Failed to load weight data', setError);

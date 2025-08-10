@@ -14,9 +14,9 @@ import {
   MenuItem,
   Chip,
   Slider,
-  InputAdornment,
   Grid
 } from '@mui/material';
+import NutritionInputs from './NutritionInputs.jsx';
 import {
   Restaurant as FoodIcon
 } from '@mui/icons-material';
@@ -120,52 +120,12 @@ const EditLogDialog = ({
                 <Typography variant="h6" fontWeight={600}>
                   {food_item.name}
                 </Typography>
-                <Grid container spacing={1.5} sx={{ mt: 0.5 }}>
-                  <Grid item xs={6} sm={3}>
-                    <TextField
-                      label="Calories"
-                      type="number"
-                      size="small"
-                      value={nutrition.calories_per_serving}
-                      onChange={(e) => setNutritionField('calories_per_serving', e.target.value)}
-                      fullWidth
-                      InputProps={{ endAdornment: <InputAdornment position="end">kcal</InputAdornment> }}
-                    />
-                  </Grid>
-                  <Grid item xs={6} sm={3}>
-                    <TextField
-                      label="Protein"
-                      type="number"
-                      size="small"
-                      value={nutrition.protein_grams}
-                      onChange={(e) => setNutritionField('protein_grams', e.target.value)}
-                      fullWidth
-                      InputProps={{ endAdornment: <InputAdornment position="end">g</InputAdornment> }}
-                    />
-                  </Grid>
-                  <Grid item xs={6} sm={3}>
-                    <TextField
-                      label="Carbs"
-                      type="number"
-                      size="small"
-                      value={nutrition.carbs_grams}
-                      onChange={(e) => setNutritionField('carbs_grams', e.target.value)}
-                      fullWidth
-                      InputProps={{ endAdornment: <InputAdornment position="end">g</InputAdornment> }}
-                    />
-                  </Grid>
-                  <Grid item xs={6} sm={3}>
-                    <TextField
-                      label="Fat"
-                      type="number"
-                      size="small"
-                      value={nutrition.fat_grams}
-                      onChange={(e) => setNutritionField('fat_grams', e.target.value)}
-                      fullWidth
-                      InputProps={{ endAdornment: <InputAdornment position="end">g</InputAdornment> }}
-                    />
-                  </Grid>
-                </Grid>
+                <Box sx={{ mt: 0.5 }}>
+                  <NutritionInputs
+                    values={nutrition}
+                    onChange={(field, val) => setNutritionField(field, val)}
+                  />
+                </Box>
               </Box>
             </Box>
           )}

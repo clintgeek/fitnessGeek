@@ -16,8 +16,9 @@ const mealItemSchema = new mongoose.Schema({
 const mealSchema = new mongoose.Schema({
   user_id: {
     type: String,
-    required: true,
-    index: true
+    required: false,
+    index: true,
+    default: null
   },
   name: {
     type: String,
@@ -50,28 +51,25 @@ mealSchema.pre('save', function(next) {
   next();
 });
 
-// Get all active meals for a user
-mealSchema.statics.getActiveMeals = async function(userId) {
+// Get all active meals (global)
+mealSchema.statics.getActiveMeals = async function() {
   return this.find({
-    user_id: userId,
     is_deleted: false
   }).populate('food_items.food_item_id').sort({ name: 1 });
 };
 
 // Get meals by meal type
-mealSchema.statics.getMealsByType = async function(userId, mealType) {
+mealSchema.statics.getMealsByType = async function(mealType) {
   return this.find({
-    user_id: userId,
     meal_type: mealType,
     is_deleted: false
   }).populate('food_items.food_item_id').sort({ name: 1 });
 };
 
-// Search meals by name
-mealSchema.statics.searchMeals = async function(userId, searchTerm) {
+// Search meals by name (global)
+mealSchema.statics.searchMeals = async function(searchTerm) {
   const regex = new RegExp(searchTerm, 'i');
   return this.find({
-    user_id: userId,
     name: regex,
     is_deleted: false
   }).populate('food_items.food_item_id').sort({ name: 1 });

@@ -19,7 +19,7 @@ const DashboardHeader = ({
   ...props
 }) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  useMediaQuery(theme.breakpoints.down('sm'));
 
   const handleQuickAction = (action) => {
     if (onQuickAction) {

@@ -42,6 +42,7 @@ import {
 import { useAuth } from '../hooks/useAuth.js';
 import { useSettings } from '../hooks/useSettings.js';
 import { userService } from '../services/userService.js';
+import { settingsService } from '../services/settingsService.js';
 import DashboardOrderSettings from '../components/DashboardOrderSettings.jsx';
 
 const Profile = () => {
@@ -51,6 +52,10 @@ const Profile = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [garminEnabled, setGarminEnabled] = useState(false);
+  const [garminUsername, setGarminUsername] = useState('');
+  const [garminPassword, setGarminPassword] = useState('');
+  const [savingGarmin, setSavingGarmin] = useState(false);
   const [settings, setSettings] = useState({
     notifications: true,
     emailUpdates: true,
@@ -69,6 +74,7 @@ const Profile = () => {
   // Load user profile data on mount
   useEffect(() => {
     loadUserProfile();
+    loadGarminSettings();
   }, []);
 
   const loadUserProfile = async () => {
@@ -85,6 +91,43 @@ const Profile = () => {
       });
     } catch (error) {
       console.error('Failed to load user profile:', error);
+    }
+  };
+
+  const loadGarminSettings = async () => {
+    try {
+      const resp = await settingsService.getSettings();
+      const g = resp?.data?.garmin || {};
+      setGarminEnabled(!!g.enabled);
+      setGarminUsername(g.username || '');
+      setGarminPassword(''); // never display existing
+    } catch (error) {
+      console.error('Failed to load Garmin settings:', error);
+    }
+  };
+
+  const handleSaveGarmin = async () => {
+    try {
+      setSavingGarmin(true);
+      setSuccess('');
+      setError('');
+      const payload = {
+        garmin: {
+          enabled: garminEnabled,
+          username: garminUsername,
+          ...(garminPassword ? { password: garminPassword } : {})
+        }
+      };
+      await settingsService.updateSettings(payload);
+      setSuccess('Garmin settings saved');
+      setGarminPassword('');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (e) {
+      console.error('Failed to save Garmin settings:', e);
+      setError('Failed to save Garmin settings');
+      setTimeout(() => setError(''), 3000);
+    } finally {
+      setSavingGarmin(false);
     }
   };
 
@@ -302,6 +345,70 @@ const Profile = () => {
                   sx={{ mr: 1 }}
                 >
                   Save Settings
+                </Button>
+              </Box>
+            </CardContent>
+          </Card>
+
+          {/* Garmin Integration */}
+          <Card sx={{ mt: 2 }}>
+            <CardContent>
+              <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
+                <BPIcon sx={{ mr: 1 }} />
+                Garmin Integration
+              </Typography>
+
+              <List>
+                <ListItem>
+                  <ListItemIcon>
+                    <BPIcon />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary="Enable Garmin"
+                    secondary="Toggle Garmin Connect integration for your account"
+                  />
+                  <ListItemSecondaryAction>
+                    <Switch
+                      edge="end"
+                      checked={garminEnabled}
+                      onChange={(e) => setGarminEnabled(e.target.checked)}
+                    />
+                  </ListItemSecondaryAction>
+                </ListItem>
+              </List>
+
+              <Divider sx={{ my: 2 }} />
+
+              <Grid container spacing={2}>
+                <Grid xs={12} md={6}>
+                  <TextField
+                    fullWidth
+                    label="Garmin Username"
+                    value={garminUsername}
+                    onChange={(e) => setGarminUsername(e.target.value)}
+                    disabled={!garminEnabled}
+                  />
+                </Grid>
+                <Grid xs={12} md={6}>
+                  <TextField
+                    fullWidth
+                    type="password"
+                    label="Garmin Password"
+                    placeholder={garminEnabled ? 'Enter to update (leave blank to keep)' : 'Disabled'}
+                    value={garminPassword}
+                    onChange={(e) => setGarminPassword(e.target.value)}
+                    disabled={!garminEnabled}
+                  />
+                </Grid>
+              </Grid>
+
+              <Box sx={{ mt: 2 }}>
+                <Button
+                  variant="contained"
+                  onClick={handleSaveGarmin}
+                  disabled={savingGarmin}
+                >
+                  {savingGarmin ? <CircularProgress size={20} /> : 'Save Garmin Settings'}
                 </Button>
               </Box>
             </CardContent>

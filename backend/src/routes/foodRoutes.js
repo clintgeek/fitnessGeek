@@ -52,7 +52,7 @@ router.get('/', async (req, res) => {
       }
     } else if (search) {
       // Search local database first
-      const localFoods = await FoodItem.search(search, userId, Math.ceil(parseInt(limit) / 2));
+      const localFoods = await FoodItem.search(search, null, Math.ceil(parseInt(limit) / 2));
 
       // Search external APIs
       let externalFoods = [];
@@ -83,12 +83,8 @@ router.get('/', async (req, res) => {
         return true;
       }).slice(0, parseInt(limit));
     } else {
-      // Get all foods (global + user's custom)
+      // Get all foods (global for all users)
       const filter = { is_deleted: false };
-      filter.$or = [
-        { user_id: null }, // Global foods
-        { user_id: userId } // User's custom foods
-      ];
 
       if (source) {
         filter.source = source;

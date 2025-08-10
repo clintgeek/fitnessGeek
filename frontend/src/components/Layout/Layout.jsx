@@ -28,12 +28,12 @@ const Layout = () => {
 
       {/* Header Bar - BuJoGeek style */}
       <AppBar
-        position="static"
+        position="fixed"
         sx={{
-          backgroundColor: '#6098CC', // Updated blue color
+          backgroundColor: '#6098CC',
           boxShadow: 'none',
           borderBottom: '1px solid rgba(0,0,0,0.1)',
-          borderRadius: 0, // No border radius on top bar
+          borderRadius: 0,
         }}
       >
         <Toolbar sx={{ minHeight: '64px !important' }}>
@@ -64,6 +64,7 @@ const Layout = () => {
           flexGrow: 1,
           backgroundColor: '#f8f9fa', // Grey background to match cards
           minHeight: 'calc(100vh - 64px - 56px)', // Account for header and bottom nav
+          paddingTop: '64px', // offset for fixed app bar
           paddingBottom: '56px', // Space for bottom navigation
         }}
       >

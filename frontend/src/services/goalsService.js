@@ -7,7 +7,7 @@ export const goalsService = {
       console.log('GoalsService: Making API call to /goals');
       const response = await apiService.get('/goals');
       console.log('GoalsService: API response:', response);
-      return response; // Return the full response, let the caller handle it
+      return response;
     } catch (error) {
       console.error('Error fetching goals:', error);
       throw error;
@@ -25,5 +25,10 @@ export const goalsService = {
       console.error('Error saving goals:', error);
       throw error;
     }
+  },
+
+  // Derived macros for today and week
+  async getDerivedMacros() {
+    return apiService.get('/goals/nutrition/macros');
   }
 };

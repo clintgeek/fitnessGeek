@@ -148,6 +148,21 @@ const createWeightLog = async (req, res) => {
 
     logger.info(`Created weight log for user ${userId}: ${weight_value}`);
 
+    // Push to Garmin if enabled
+    try {
+      const UserSettings = require('../models/UserSettings');
+      const settings = await UserSettings.getOrCreate(userId);
+      if (settings?.garmin?.enabled) {
+        const garmin = require('../services/garminConnectService');
+        // Use local date string for clarity
+        const ymd = new Date(parsedDate.getTime() - parsedDate.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+        await garmin.updateWeightToGarmin(userId, ymd, weightLog.weight_value, Intl.DateTimeFormat().resolvedOptions().timeZone);
+        logger.info(`Pushed weight to Garmin for user ${userId} on ${ymd}`);
+      }
+    } catch (pushErr) {
+      logger.warn(`Failed to push weight to Garmin for user ${userId}: ${pushErr.message}`);
+    }
+
     res.status(201).json({
       success: true,
       message: 'Weight log created successfully',
@@ -201,6 +216,20 @@ const updateWeightLog = async (req, res) => {
     await weightLog.save();
 
     logger.info(`Updated weight log ${id} for user ${userId}`);
+
+    // Optionally push updated weight to Garmin if log_date is today
+    try {
+      const UserSettings = require('../models/UserSettings');
+      const settings = await UserSettings.getOrCreate(userId);
+      if (settings?.garmin?.enabled) {
+        const garmin = require('../services/garminConnectService');
+        const ymd = new Date(weightLog.log_date.getTime() - weightLog.log_date.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+        await garmin.updateWeightToGarmin(userId, ymd, weightLog.weight_value, Intl.DateTimeFormat().resolvedOptions().timeZone);
+        logger.info(`Pushed updated weight to Garmin for user ${userId} on ${ymd}`);
+      }
+    } catch (pushErr) {
+      logger.warn(`Failed to push updated weight to Garmin for user ${userId}: ${pushErr.message}`);
+    }
 
     res.json({
       success: true,

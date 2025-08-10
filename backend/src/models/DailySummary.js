@@ -122,7 +122,6 @@ dailySummarySchema.statics.getOrCreate = async function(userId, date) {
 // Static method to update daily summary from food logs
 dailySummarySchema.statics.updateFromLogs = async function(userId, date) {
   const FoodLog = mongoose.model('FoodLog');
-  const NutritionGoals = mongoose.model('NutritionGoals');
 
   const startDate = parseLocalDate(date);
   startDate.setHours(0, 0, 0, 0);
@@ -177,17 +176,16 @@ dailySummarySchema.statics.updateFromLogs = async function(userId, date) {
   });
 
   // Get user's goals
-  const goals = await NutritionGoals.findOne({
-    user_id: userId,
-    is_active: true
-  });
+  const UserSettings = mongoose.model('UserSettings');
+  const userSettings = await UserSettings.findOne({ user_id: userId });
+  const goals = userSettings?.nutrition_goal || null;
 
   // Check if goals are met
   const goals_met = {
-    calories: goals ? totals.calories >= goals.calories : false,
-    protein: goals ? totals.protein_grams >= goals.protein_grams : false,
-    carbs: goals ? totals.carbs_grams >= goals.carbs_grams : false,
-    fat: goals ? totals.fat_grams >= goals.fat_grams : false
+    calories: goals && goals.daily_calorie_target ? totals.calories >= goals.daily_calorie_target : false,
+    protein: goals && goals.protein_grams ? totals.protein_grams >= goals.protein_grams : false,
+    carbs: goals && goals.carbs_grams ? totals.carbs_grams >= goals.carbs_grams : false,
+    fat: goals && goals.fat_grams ? totals.fat_grams >= goals.fat_grams : false
   };
 
   // Update or create daily summary

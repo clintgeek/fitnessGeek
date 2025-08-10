@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { fitnessGeekService } from '../services/fitnessGeekService.js';
-import { goalsService } from '../services/goalsService.js';
+// Legacy goals removed
 import { settingsService } from '../services/settingsService.js';
+import { goalsService } from '../services/goalsService.js';
 
 export const useFoodLog = (selectedDate) => {
   const [logs, setLogs] = useState([]);
@@ -16,42 +17,58 @@ export const useFoodLog = (selectedDate) => {
       // Try settings first
       const settingsResp = await settingsService.getSettings();
       const settingsData = settingsResp?.data || settingsResp?.data?.data || settingsResp; // support different shapes
+      // Debug: log nutrition goal path
+      try {
+        console.log('[useFoodLog] settings keys:', Object.keys(settingsData || {}));
+        console.log('[useFoodLog] settings.nutrition_goal:', settingsData?.nutrition_goal);
+        console.log('[useFoodLog] settings.goals?.nutrition_goal:', settingsData?.goals?.nutrition_goal);
+        console.log('[useFoodLog] settings.wizard?.nutrition_goal:', settingsData?.wizard?.nutrition_goal);
+      } catch (e) {}
       const ng = settingsData?.nutrition_goal;
 
       if (ng && ng.enabled) {
-        // Determine target for the selected date
-        // Parse YYYY-MM-DD as a local date to avoid UTC off-by-one
-        const [y, m, d] = String(selectedDate || '').split('-').map(Number);
-        const dateObj = new Date(y || 0, (m || 1) - 1, d || 1);
-        // Map Mon..Sun = 0..6 to match our schedule array order
-        const dayIndex = (dateObj.getDay() + 6) % 7; // getDay(): Sun=0..Sat=6 → Mon=0
-        const dayTarget = Array.isArray(ng.weekly_schedule) && ng.weekly_schedule.length === 7
-          ? ng.weekly_schedule[dayIndex]
-          : ng.daily_calorie_target;
-
-        setGoals({
-          nutrition: {
-            trackMacros: true,
-            goals: {
-              calories: Math.round(dayTarget || 0)
-            }
-          },
-          weight: ng.start_weight && ng.target_weight ? {
-            startWeight: ng.start_weight,
-            targetWeight: ng.target_weight,
-            startDate: ng.start_date,
-            goalDate: ng.estimated_end_date,
-            is_active: true
-          } : null
-        });
-        return;
+        // Derive macros via backend rules to keep parity across UI
+        try {
+          const derived = await goalsService.getDerivedMacros();
+          const payload = derived?.data || derived?.data?.data || derived;
+          const today = payload?.today;
+          setGoals({
+            nutrition: {
+              trackMacros: true,
+              goals: today ? {
+                calories: Math.round((today.target_calories ?? today.calories) || 0),
+                protein: Math.round(today.protein_g || 0),
+                fat: Math.round(today.fat_g || 0),
+                carbs: Math.round(today.carbs_g || 0)
+              } : { calories: Math.round(ng.daily_calorie_target || 0) }
+            },
+            weight: ng.start_weight && ng.target_weight ? {
+              startWeight: ng.start_weight,
+              targetWeight: ng.target_weight,
+              startDate: ng.start_date,
+              goalDate: ng.estimated_end_date,
+              is_active: true
+            } : null
+          });
+          return;
+        } catch (e) {
+          console.warn('[useFoodLog] Derived macros endpoint failed, falling back to schedule', e);
+          // Fallback to schedule
+          const [y, m, d] = String(selectedDate || '').split('-').map(Number);
+          const dateObj = new Date(y || 0, (m || 1) - 1, d || 1);
+          const dayIndex = (dateObj.getDay() + 6) % 7;
+          const dayTarget = Array.isArray(ng.weekly_schedule) && ng.weekly_schedule.length === 7
+            ? ng.weekly_schedule[dayIndex]
+            : ng.daily_calorie_target;
+          setGoals({
+            nutrition: { trackMacros: true, goals: { calories: Math.round(dayTarget || 0) } },
+            weight: null
+          });
+          return;
+        }
       }
 
-      // Fallback to legacy goals endpoint
-      const response = await goalsService.getGoals();
-      if (response && response.data) {
-        setGoals(response.data);
-      }
+      // Legacy goals removed; no fallback
     } catch (error) {
       console.error('Error loading goals:', error);
     }
