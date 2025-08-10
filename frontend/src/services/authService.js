@@ -1,4 +1,5 @@
 import axios from 'axios';
+import logger from '../utils/logger.js';
 
 // baseGeek API configuration
 const BASEGEEK_URL = 'https://basegeek.clintgeek.com';
@@ -96,13 +97,11 @@ export const authService = {
   // Login user
   login: async (credentials) => {
     try {
-      console.log('Login credentials:', credentials); // Debug log
       const requestData = {
         identifier: credentials.identifier,
         password: credentials.password,
         app: APP_NAME
       };
-      console.log('Request data:', requestData); // Debug log
       const response = await api.post('/api/auth/login', requestData);
 
       const { token, refreshToken, user } = response.data;
@@ -113,7 +112,7 @@ export const authService = {
 
       return { user, token, refreshToken };
     } catch (error) {
-      console.error('Error logging in:', error);
+      logger.error('Error logging in:', error);
       const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Login failed';
       throw new Error(errorMessage);
     }
@@ -130,7 +129,7 @@ export const authService = {
       const response = await api.get('/api/users/me');
       return response.data.user;
     } catch (error) {
-      console.error('Error getting current user:', error);
+      logger.error('Error getting current user:', error);
       throw error;
     }
   },
@@ -169,7 +168,7 @@ export const authService = {
 
       return response.data.valid;
     } catch (error) {
-      console.error('Token validation failed:', error);
+      logger.error('Token validation failed:', error);
       return false;
     }
   },
@@ -195,7 +194,7 @@ export const authService = {
 
       return { user, token, refreshToken: newRefreshToken };
     } catch (error) {
-      console.error('Error refreshing token:', error);
+      logger.error('Error refreshing token:', error);
       // If refresh fails, logout the user
       authService.logout();
       throw error;

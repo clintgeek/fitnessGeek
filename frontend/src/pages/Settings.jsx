@@ -43,6 +43,7 @@ import {
   Save as SaveIcon
 } from '@mui/icons-material';
 import { settingsService } from '../services/settingsService.js';
+import logger from '../utils/logger.js';
 import DashboardOrderSettings from '../components/DashboardOrderSettings';
 
 const Settings = () => {
@@ -87,7 +88,7 @@ const Settings = () => {
         units: { weight: 'lbs', height: 'ft' },
         garmin: settingsService.getDefaultGarminSettings()
       };
-      console.log('Settings - defaultSettings:', defaultSettings);
+      logger.debug('Settings: using default settings');
       setSettings(defaultSettings);
     } finally {
       setLoading(false);

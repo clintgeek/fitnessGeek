@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { authService } from '../services/authService.js';
 import { streakService } from '../services/streakService.js';
 import { AuthContext } from './AuthContextDef.jsx';
+import logger from '../utils/logger.js';
 
 // Auth provider component
 export const AuthProvider = ({ children }) => {
@@ -21,9 +22,9 @@ export const AuthProvider = ({ children }) => {
       const refreshInterval = setInterval(async () => {
         try {
           await authService.refreshToken();
-          console.log('Token refreshed successfully');
+          logger.debug('Token refreshed');
         } catch (error) {
-          console.error('Periodic token refresh failed:', error);
+          logger.error('Periodic token refresh failed:', error);
           // If refresh fails, logout user
           logout();
         }
@@ -46,14 +47,14 @@ export const AuthProvider = ({ children }) => {
           // Record daily login once per local day
           await recordDailyLoginIfNeeded();
         } catch (error) {
-          console.error('Error getting current user:', error);
+          logger.error('Error getting current user:', error);
           // If getting user fails, try to refresh token
           try {
             const refreshResult = await authService.refreshToken();
             setUser(refreshResult.user);
             await recordDailyLoginIfNeeded();
           } catch (refreshError) {
-            console.error('Token refresh failed:', refreshError);
+            logger.error('Token refresh failed:', refreshError);
             // If refresh fails, logout the user
             authService.logout();
             setUser(null);
@@ -61,7 +62,7 @@ export const AuthProvider = ({ children }) => {
         }
       }
     } catch (error) {
-      console.error('Error initializing auth:', error);
+      logger.error('Error initializing auth:', error);
       // If there's an error, logout the user
       authService.logout();
       setUser(null);
@@ -103,7 +104,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem(key, todayLocal);
       }
     } catch (e) {
-      console.error('Failed to record daily login streak:', e);
+      logger.error('Failed to record daily login streak:', e);
     }
   };
 

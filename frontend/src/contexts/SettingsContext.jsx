@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { settingsService } from '../services/settingsService.js';
 import { AuthContext } from './AuthContextDef.jsx';
+import logger from '../utils/logger.js';
 
 const SettingsContext = createContext();
 
@@ -11,19 +12,18 @@ export const SettingsProvider = ({ children }) => {
   const [dashboardSettings, setDashboardSettings] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  console.log('SettingsProvider: Component created/recreated');
-  console.log('SettingsProvider: Auth state:', { user, authLoading, isAuthenticated });
+  logger.debug('SettingsProvider: mount/recreate');
 
   // Load settings when authentication is ready
   useEffect(() => {
-    console.log('SettingsContext: useEffect triggered, auth state:', { authLoading, isAuthenticated });
+    logger.debug('SettingsContext: auth state changed');
 
     // Only load settings if authentication is ready and user is authenticated
     if (!authLoading && isAuthenticated) {
-      console.log('SettingsContext: Auth ready, loading settings...');
+      logger.debug('SettingsContext: Auth ready, loading settings...');
       loadSettings();
     } else if (!authLoading && !isAuthenticated) {
-      console.log('SettingsContext: Not authenticated, clearing settings');
+      logger.debug('SettingsContext: Not authenticated, clearing settings');
       setDashboardSettings(null);
       setLoading(false);
     }
@@ -32,40 +32,27 @@ export const SettingsProvider = ({ children }) => {
   const loadSettings = async () => {
     try {
       setLoading(true);
-      console.log('Loading settings...');
+      logger.debug('SettingsContext: Loading settings...');
 
-      // Debug: Check what token is being used
-      const geekToken = localStorage.getItem('geek_token');
-      console.log('Current geek_token:', geekToken ? geekToken.substring(0, 20) + '...' : 'none');
-
-      // Decode the token to see the user ID
-      if (geekToken) {
-        try {
-          const payload = JSON.parse(atob(geekToken.split('.')[1]));
-          console.log('Token payload:', payload);
-          console.log('User ID from token:', payload.id);
-        } catch (error) {
-          console.error('Error decoding token:', error);
-        }
-      }
+      // Avoid logging tokens or payloads to keep console clean and secure
 
       const response = await settingsService.getSettings();
-      console.log('Settings response:', response);
+      logger.debug('SettingsContext: settings loaded');
       if (response.data && response.data.dashboard) {
-        console.log('Setting dashboard settings:', response.data.dashboard);
+        logger.debug('SettingsContext: dashboard settings set');
         setDashboardSettings(response.data.dashboard);
-        console.log('SettingsProvider: Settings set from backend');
+        logger.debug('SettingsContext: settings set from backend');
       } else {
-        console.log('No dashboard settings found, using defaults');
+        logger.debug('SettingsContext: no dashboard settings found, using defaults');
         setDashboardSettings(settingsService.getDefaultDashboardSettings());
-        console.log('SettingsProvider: Settings set from defaults (no backend data)');
+        logger.debug('SettingsContext: settings set from defaults (no backend data)');
       }
     } catch (error) {
-      console.error('Error loading settings:', error);
+      logger.error('Error loading settings:', error);
       // Use default settings if loading fails
-      console.log('Using default settings due to error');
+      logger.debug('SettingsContext: using default settings due to error');
       setDashboardSettings(settingsService.getDefaultDashboardSettings());
-      console.log('SettingsProvider: Settings set from defaults (error)');
+      logger.debug('SettingsContext: settings set from defaults (error)');
     } finally {
       setLoading(false);
     }
@@ -90,9 +77,9 @@ export const SettingsProvider = ({ children }) => {
       ...dashboardSettings,
       [setting]: value
     };
-    console.log('Updating dashboard setting:', setting, value, updatedSettings);
+    logger.debug('SettingsContext: updating dashboard setting', setting, value);
     const result = await updateDashboardSettings(updatedSettings);
-    console.log('Update result:', result);
+    logger.debug('SettingsContext: update result', result);
     return result;
   };
 

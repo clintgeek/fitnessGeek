@@ -45,6 +45,7 @@ import {
   DragIndicator as DragIndicatorIcon,
   Restaurant as ForkKnifeIcon
 } from '@mui/icons-material';
+import logger from '../utils/logger.js';
 
 // Sortable item component
 const SortableItem = ({ cardKey, cardConfig, settings, onToggleCard }) => {
@@ -247,10 +248,8 @@ const DashboardOrderSettings = ({ settings, onSettingsChange, onOrderChange }) =
 
     const visibleCards = getVisibleCards();
 
-  // Debug logging
-  console.log('DashboardOrderSettings - settings:', settings);
-  console.log('DashboardOrderSettings - visibleCards:', visibleCards);
-  console.log('DashboardOrderSettings - card_order:', settings?.card_order);
+  // Debug logging (dev only)
+  logger.debug('DashboardOrderSettings render');
 
   return (
     <Box>

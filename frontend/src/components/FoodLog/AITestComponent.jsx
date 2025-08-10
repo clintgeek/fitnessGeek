@@ -8,6 +8,7 @@ import {
 } from '@mui/material';
 import { SmartToy as AIIcon } from '@mui/icons-material';
 import { aiService } from '../../services/aiService.js';
+import logger from '../../utils/logger.js';
 
 const AITestComponent = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -23,10 +24,10 @@ const AITestComponent = () => {
       const testInput = "2 chicken tacos and a dos equis";
       const parsedResult = await aiService.parseFoodDescription(testInput);
       setResult(parsedResult);
-      console.log('AI Test Result:', parsedResult);
+      logger.debug('AI Test Result received');
     } catch (err) {
       setError(err.message);
-      console.error('AI Test Error:', err);
+      logger.error('AI Test Error:', err);
     } finally {
       setIsLoading(false);
     }

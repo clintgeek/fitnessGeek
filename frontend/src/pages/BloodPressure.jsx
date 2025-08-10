@@ -20,6 +20,7 @@ import BPHRChart from '../components/BloodPressure/BPHRChart.jsx';
 import { fitnessGeekService } from '../services/fitnessGeekService.js';
 import { bpService } from '../services/bpService.js';
 import { getTodayLocal, formatDateLocal } from '../utils/dateUtils.js';
+import logger from '../utils/logger.js';
 
 const BloodPressure = () => {
   const theme = useTheme();
@@ -135,7 +136,7 @@ const BloodPressure = () => {
       }
     } catch (error) {
       setError('Failed to load blood pressure data');
-      console.error('Error loading BP data:', error);
+      logger.error('Error loading BP data:', error);
     } finally {
       setLoading(false);
     }
@@ -150,7 +151,7 @@ const BloodPressure = () => {
       const data = resp.data || resp?.data?.data || resp;
       if (data && data.series) setHrSeries(data.series);
     } catch (e) {
-      console.warn('Failed to load HR series:', e.message);
+      logger.warn('Failed to load HR series');
     }
   };
 
@@ -183,7 +184,7 @@ const BloodPressure = () => {
       } else {
         setError('Failed to add blood pressure reading');
       }
-      console.error('Error adding BP reading:', error);
+      logger.error('Error adding BP reading:', error);
     }
   };
 
@@ -201,7 +202,7 @@ const BloodPressure = () => {
       }
     } catch (error) {
       setError('Failed to delete blood pressure reading');
-      console.error('Error deleting BP reading:', error);
+      logger.error('Error deleting BP reading:', error);
     }
   };
 

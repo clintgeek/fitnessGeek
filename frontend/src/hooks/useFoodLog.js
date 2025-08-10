@@ -3,6 +3,7 @@ import { fitnessGeekService } from '../services/fitnessGeekService.js';
 // Legacy goals removed
 import { settingsService } from '../services/settingsService.js';
 import { goalsService } from '../services/goalsService.js';
+import logger from '../utils/logger.js';
 
 export const useFoodLog = (selectedDate) => {
   const [logs, setLogs] = useState([]);
@@ -19,10 +20,7 @@ export const useFoodLog = (selectedDate) => {
       const settingsData = settingsResp?.data || settingsResp?.data?.data || settingsResp; // support different shapes
       // Debug: log nutrition goal path
       try {
-        console.log('[useFoodLog] settings keys:', Object.keys(settingsData || {}));
-        console.log('[useFoodLog] settings.nutrition_goal:', settingsData?.nutrition_goal);
-        console.log('[useFoodLog] settings.goals?.nutrition_goal:', settingsData?.goals?.nutrition_goal);
-        console.log('[useFoodLog] settings.wizard?.nutrition_goal:', settingsData?.wizard?.nutrition_goal);
+        logger.debug('[useFoodLog] settings keys:', Object.keys(settingsData || {}));
       } catch (e) {}
       const ng = settingsData?.nutrition_goal;
 
@@ -52,7 +50,7 @@ export const useFoodLog = (selectedDate) => {
           });
           return;
         } catch (e) {
-          console.warn('[useFoodLog] Derived macros endpoint failed, falling back to schedule', e);
+          logger.warn('[useFoodLog] Derived macros endpoint failed, falling back to schedule');
           // Fallback to schedule
           const [y, m, d] = String(selectedDate || '').split('-').map(Number);
           const dateObj = new Date(y || 0, (m || 1) - 1, d || 1);
@@ -70,7 +68,7 @@ export const useFoodLog = (selectedDate) => {
 
       // Legacy goals removed; no fallback
     } catch (error) {
-      console.error('Error loading goals:', error);
+      logger.error('Error loading goals:', error);
     }
   };
 
@@ -78,9 +76,9 @@ export const useFoodLog = (selectedDate) => {
   const loadFoodLogs = async () => {
     setLoading(true);
     try {
-      console.log('Loading logs for date:', selectedDate);
+      logger.debug('Loading logs for date:', selectedDate);
       const response = await fitnessGeekService.getLogsForDate(selectedDate);
-      console.log('Logs response:', response);
+      logger.debug('Logs response received');
 
       // The backend returns { success: true, data: logs }
       if (response && response.success) {
@@ -95,9 +93,9 @@ export const useFoodLog = (selectedDate) => {
         setLogs([]);
       }
 
-      console.log('Logs set to:', logs);
+      logger.debug('Logs state updated');
     } catch (error) {
-      console.error('Error loading food logs:', error);
+      logger.error('Error loading food logs:', error);
       setLogs([]);
     } finally {
       setLoading(false);
@@ -124,26 +122,24 @@ export const useFoodLog = (selectedDate) => {
         nutrition: food?.nutrition
       };
 
-      console.log('Sending log data:', logData);
+      logger.debug('Sending log data');
       const response = await fitnessGeekService.addFoodToLog(logData);
-      console.log('Raw response from addFoodToLog:', response);
-      console.log('Response type:', typeof response);
-      console.log('Response keys:', Object.keys(response || {}));
+      logger.debug('addFoodToLog response received');
 
       // The backend returns { success: true, data: log, message: '...' }
       // The apiService returns the entire response object
       if (response && response.success) {
-        console.log('Success! Setting success message and reloading logs');
+        logger.debug('Food log added successfully');
         setAutoCloseMessage('Food added successfully!', setSuccessMessage);
         await loadFoodLogs();
         return true;
       } else {
-        console.log('Response does not have success=true:', response);
+        logger.warn('Food log add failed');
         setAutoCloseMessage('Failed to add food. Please try again.', setErrorMessage);
         return false;
       }
     } catch (error) {
-      console.error('Error adding food log:', error);
+      logger.error('Error adding food log:', error);
       setAutoCloseMessage('Error adding food. Please try again.', setErrorMessage);
       return false;
     }
@@ -153,7 +149,7 @@ export const useFoodLog = (selectedDate) => {
   const updateFoodLog = async (logId, updateData) => {
     try {
       const response = await fitnessGeekService.updateFoodLog(logId, updateData);
-      console.log('Update log response:', response);
+      logger.debug('Update log response received');
 
       // The backend returns { success: true, data: log, message: '...' }
       if (response && response.success) {
@@ -165,7 +161,7 @@ export const useFoodLog = (selectedDate) => {
         return false;
       }
     } catch (error) {
-      console.error('Error updating food log:', error);
+      logger.error('Error updating food log:', error);
       setAutoCloseMessage('Error updating food log. Please try again.', setErrorMessage);
       return false;
     }
@@ -175,7 +171,7 @@ export const useFoodLog = (selectedDate) => {
   const deleteFoodLog = async (logId) => {
     try {
       const response = await fitnessGeekService.deleteFoodLog(logId);
-      console.log('Delete log response:', response);
+      logger.debug('Delete log response received');
 
       // The backend returns { success: true, data: log, message: '...' }
       if (response && response.success) {
@@ -187,7 +183,7 @@ export const useFoodLog = (selectedDate) => {
         return false;
       }
     } catch (error) {
-      console.error('Error deleting food log:', error);
+      logger.error('Error deleting food log:', error);
       setAutoCloseMessage('Error deleting food log. Please try again.', setErrorMessage);
       return false;
     }
@@ -197,7 +193,7 @@ export const useFoodLog = (selectedDate) => {
   const saveMeal = async (mealData) => {
     try {
       const response = await fitnessGeekService.createMeal(mealData);
-      console.log('Save meal response:', response);
+      logger.debug('Save meal response received');
 
       // The backend returns { success: true, data: meal, message: '...' }
       if (response && response.success) {
@@ -209,7 +205,7 @@ export const useFoodLog = (selectedDate) => {
         return false;
       }
     } catch (error) {
-      console.error('Error saving meal:', error);
+      logger.error('Error saving meal:', error);
       setAutoCloseMessage('Error saving meal. Please try again.', setErrorMessage);
       return false;
     }
@@ -224,7 +220,7 @@ export const useFoodLog = (selectedDate) => {
 
       // Safety check for food_item
       if (!food_item) {
-        console.warn('Food item or nutrition data missing:', log);
+        logger.warn('Food item or nutrition data missing');
         return acc;
       }
 

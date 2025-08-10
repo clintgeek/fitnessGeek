@@ -21,6 +21,7 @@ import {
   Restaurant as NutritionIcon,
   MonitorWeight as WeightIcon
 } from '@mui/icons-material';
+import logger from '../utils/logger.js';
 
 const Goals = () => {
   const navigate = useNavigate();
@@ -59,13 +60,10 @@ const Goals = () => {
       try {
         setLoadingGoals(true);
         const response = await goalsService.getGoals();
-        console.log('Loaded goals from backend:', response);
+        logger.debug('Goals: loaded from backend');
 
         // Extract the data from the response
         const goals = response.data;
-        console.log('Weight goals check:', goals?.weight);
-        console.log('Weight startWeight:', goals?.weight?.startWeight);
-        console.log('Weight targetWeight:', goals?.weight?.targetWeight);
 
         if (goals && goals.nutrition) {
           setNutritionGoals({
@@ -97,10 +95,10 @@ const Goals = () => {
           });
         } else {
           // If no weight goals from backend, keep current state (don't reset to disabled)
-          console.log('No weight goals found in backend, keeping current state');
+          logger.debug('Goals: no weight goals found in backend, keeping current state');
         }
       } catch (error) {
-        console.error('Failed to load goals:', error);
+        logger.error('Failed to load goals:', error);
 
         // If authentication error, redirect to login
         if (error.message && error.message.includes('Unauthorized')) {
@@ -198,7 +196,7 @@ const Goals = () => {
     }
 
     try {
-      console.log('Saving goals to backend:', goalsToSave);
+      logger.debug('Goals: saving to backend');
       // Save to backend
       await goalsService.saveGoals(goalsToSave);
 
@@ -209,7 +207,7 @@ const Goals = () => {
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (error) {
-      console.error('Failed to save goals:', error);
+      logger.error('Failed to save goals:', error);
       // Still save to localStorage as fallback
       localStorage.setItem('fitnessGeek_nutritionGoals', JSON.stringify(nutritionGoals));
       localStorage.setItem('fitnessGeek_weightGoal', JSON.stringify(weightGoal));

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { weightService } from '../services/weightService';
 // Legacy goals removed
 import { settingsService } from '../services/settingsService.js';
+import logger from '../utils/logger.js';
 
 export const useWeight = () => {
   const [weightLogs, setWeightLogs] = useState([]);
@@ -28,14 +29,10 @@ export const useWeight = () => {
         const settingsData = settingsResp?.data || settingsResp?.data?.data || settingsResp;
         // Debug: log settings payload
         try {
-          // Avoid logging huge trees – pick likely locations
-          console.log('[useWeight] settings keys:', Object.keys(settingsData || {}));
-          console.log('[useWeight] settings.weight_goal:', settingsData?.weight_goal);
-          console.log('[useWeight] settings.goals?.weight_goal:', settingsData?.goals?.weight_goal);
-          console.log('[useWeight] settings.wizard?.weight_goal:', settingsData?.wizard?.weight_goal);
-          console.log('[useWeight] settings.fitness?.weight_goal:', settingsData?.fitness?.weight_goal);
+          // Avoid logging huge trees – keep concise in dev
+          logger.debug('[useWeight] settings keys:', Object.keys(settingsData || {}));
         } catch (e) {
-          console.warn('[useWeight] Failed to log settings', e);
+          logger.warn('[useWeight] Failed to log settings');
         }
         // Support multiple possible nesting/keys for weight_goal
         const wgRaw = settingsData?.weight_goal
@@ -64,9 +61,7 @@ export const useWeight = () => {
           goalDate: ng.estimated_end_date ?? null
         } : null;
 
-        console.log('[useWeight] wgRaw:', wgRaw);
-        console.log('[useWeight] wgMapped:', wgMapped);
-        console.log('[useWeight] ngMapped:', ngMapped);
+        logger.debug('[useWeight] mapped goal candidates');
 
         // Choose goal source:
         // - If weight_goal has both start/target OR explicitly enabled, use it
@@ -83,12 +78,12 @@ export const useWeight = () => {
           setWeightGoal(null);
         }
       } catch (goalsError) {
-        console.error('Error loading weight goals:', goalsError);
+        logger.error('Error loading weight goals:', goalsError);
         setWeightGoal(null);
       }
     } catch (error) {
       setAutoCloseMessage('Failed to load weight data', setError);
-      console.error('Error loading weight data:', error);
+      logger.error('Error loading weight data:', error);
     } finally {
       setLoading(false);
     }
@@ -113,7 +108,7 @@ export const useWeight = () => {
       }
     } catch (error) {
       setAutoCloseMessage('Failed to add weight log', setError);
-      console.error('Error adding weight log:', error);
+      logger.error('Error adding weight log:', error);
       return false;
     }
   };
@@ -134,7 +129,7 @@ export const useWeight = () => {
       }
     } catch (error) {
       setAutoCloseMessage('Failed to delete weight log', setError);
-      console.error('Error deleting weight log:', error);
+      logger.error('Error deleting weight log:', error);
       return false;
     }
   };

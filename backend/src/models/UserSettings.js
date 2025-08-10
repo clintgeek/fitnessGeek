@@ -28,6 +28,10 @@ const userSettingsSchema = new mongoose.Schema({
       type: Boolean,
       default: true
     },
+    show_garmin_summary: {
+      type: Boolean,
+      default: true
+    },
     show_quick_actions: {
       type: Boolean,
       default: true
@@ -50,6 +54,7 @@ const userSettingsSchema = new mongoose.Schema({
         'calories_today',
         'login_streak',
         'nutrition_today',
+        'garmin_summary',
         'quick_actions',
         'weight_goal',
         'nutrition_goal'

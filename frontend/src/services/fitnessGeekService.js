@@ -1,4 +1,5 @@
 import { apiService } from './apiService.js';
+import logger from '../utils/logger.js';
 
 // FitnessGeek service for food logging and nutrition tracking
 export const fitnessGeekService = {
@@ -12,7 +13,7 @@ export const fitnessGeekService = {
       });
       return response.data.data || response.data;
     } catch (error) {
-      console.error('Error searching foods:', error);
+      logger.error('Error searching foods:', error);
       throw error;
     }
   },
@@ -25,7 +26,7 @@ export const fitnessGeekService = {
       });
       return response.data[0] || null;
     } catch (error) {
-      console.error('Error getting food by barcode:', error);
+      logger.error('Error getting food by barcode:', error);
       throw error;
     }
   },
@@ -36,7 +37,7 @@ export const fitnessGeekService = {
       const response = await apiService.post('/foods', foodData);
       return response.data;
     } catch (error) {
-      console.error('Error creating custom food:', error);
+      logger.error('Error creating custom food:', error);
       throw error;
     }
   },
@@ -47,7 +48,7 @@ export const fitnessGeekService = {
       const response = await apiService.put(`/foods/${foodId}`, updateData);
       return response.data;
     } catch (error) {
-      console.error('Error updating food:', error);
+      logger.error('Error updating food:', error);
       throw error;
     }
   },
@@ -58,7 +59,7 @@ export const fitnessGeekService = {
       const response = await apiService.delete(`/foods/${foodId}`);
       return response;
     } catch (error) {
-      console.error('Error deleting food:', error);
+      logger.error('Error deleting food:', error);
       throw error;
     }
   },
@@ -71,7 +72,7 @@ export const fitnessGeekService = {
       });
       return response.data.data || response.data;
     } catch (error) {
-      console.error('Error getting all foods:', error);
+      logger.error('Error getting all foods:', error);
       throw error;
     }
   },
@@ -86,7 +87,7 @@ export const fitnessGeekService = {
       });
       return response.data.data || response.data;
     } catch (error) {
-      console.error('Error getting logs for date:', error);
+      logger.error('Error getting logs for date:', error);
       throw error;
     }
   },
@@ -97,7 +98,7 @@ export const fitnessGeekService = {
       const response = await apiService.get('/logs');
       return response.data.data || response.data;
     } catch (error) {
-      console.error('Error getting recent logs:', error);
+      logger.error('Error getting recent logs:', error);
       throw error;
     }
   },
@@ -108,7 +109,7 @@ export const fitnessGeekService = {
       const response = await apiService.post('/logs', logData);
       return response; // Return full response, not response.data
     } catch (error) {
-      console.error('Error adding food to log:', error);
+      logger.error('Error adding food to log:', error);
       throw error;
     }
   },
@@ -119,7 +120,7 @@ export const fitnessGeekService = {
       const response = await apiService.put(`/logs/${logId}`, updateData);
       return response; // Return full response, not response.data
     } catch (error) {
-      console.error('Error updating food log:', error);
+      logger.error('Error updating food log:', error);
       throw error;
     }
   },
@@ -130,7 +131,7 @@ export const fitnessGeekService = {
       const response = await apiService.delete(`/logs/${logId}`);
       return response; // Return full response, not response.data
     } catch (error) {
-      console.error('Error deleting food log:', error);
+      logger.error('Error deleting food log:', error);
       throw error;
     }
   },
@@ -143,7 +144,7 @@ export const fitnessGeekService = {
       const response = await apiService.get(`/summary/${date}`);
       return response.data;
     } catch (error) {
-      console.error('Error getting daily summary:', error);
+      logger.error('Error getting daily summary:', error);
       throw error;
     }
   },
@@ -154,7 +155,7 @@ export const fitnessGeekService = {
       const response = await apiService.get('/summary/today');
       return response.data;
     } catch (error) {
-      console.error('Error getting today\'s summary:', error);
+      logger.error('Error getting today\'s summary:', error);
       throw error;
     }
   },
@@ -165,7 +166,7 @@ export const fitnessGeekService = {
       const response = await apiService.get(`/summary/week/${startDate}`);
       return response.data;
     } catch (error) {
-      console.error('Error getting weekly summary:', error);
+      logger.error('Error getting weekly summary:', error);
       throw error;
     }
   },
@@ -176,7 +177,7 @@ export const fitnessGeekService = {
       const response = await apiService.post(`/summary/${date}/refresh`);
       return response.data;
     } catch (error) {
-      console.error('Error refreshing daily summary:', error);
+      logger.error('Error refreshing daily summary:', error);
       throw error;
     }
   },
@@ -188,7 +189,7 @@ export const fitnessGeekService = {
       const response = await apiService.get(`/fitness/garmin/daily/${date || ''}`);
       return response.data?.data || response.data;
     } catch (error) {
-      console.error('Error getting Garmin daily:', error);
+      logger.error('Error getting Garmin daily:', error);
       throw error;
     }
   },
@@ -200,7 +201,7 @@ export const fitnessGeekService = {
       const response = await apiService.post('/fitness/garmin/weight', { date, weightLbs, timezone });
       return response;
     } catch (error) {
-      console.error('Error pushing weight to Garmin:', error);
+      logger.error('Error pushing weight to Garmin:', error);
       throw error;
     }
   },
@@ -220,7 +221,7 @@ export const fitnessGeekService = {
       // Be resilient to both shapes.
       return (response && (response.data ?? response.data?.data)) || response.data || response;
     } catch (error) {
-      console.error('Error getting meals:', error);
+      logger.error('Error getting meals:', error);
       throw error;
     }
   },
@@ -231,7 +232,7 @@ export const fitnessGeekService = {
       const response = await apiService.get(`/meals/${mealId}`);
       return response.data.data || response.data;
     } catch (error) {
-      console.error('Error getting meal:', error);
+      logger.error('Error getting meal:', error);
       throw error;
     }
   },
@@ -242,7 +243,7 @@ export const fitnessGeekService = {
       const response = await apiService.post('/meals', mealData);
       return response; // Return full response, not response.data
     } catch (error) {
-      console.error('Error creating meal:', error);
+      logger.error('Error creating meal:', error);
       throw error;
     }
   },
@@ -253,7 +254,7 @@ export const fitnessGeekService = {
       const response = await apiService.put(`/meals/${mealId}`, updateData);
       return response.data;
     } catch (error) {
-      console.error('Error updating meal:', error);
+      logger.error('Error updating meal:', error);
       throw error;
     }
   },
@@ -264,7 +265,7 @@ export const fitnessGeekService = {
       const response = await apiService.delete(`/meals/${mealId}`);
       return response;
     } catch (error) {
-      console.error('Error deleting meal:', error);
+      logger.error('Error deleting meal:', error);
       throw error;
     }
   },
@@ -278,7 +279,7 @@ export const fitnessGeekService = {
       });
       return response.data;
     } catch (error) {
-      console.error('Error adding meal to log:', error);
+      logger.error('Error adding meal to log:', error);
       throw error;
     }
   },

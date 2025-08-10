@@ -1,4 +1,5 @@
 import axios from 'axios';
+import logger from '../utils/logger.js';
 
 // Determine API base URL based on environment
 let API_URL = 'https://fitnessgeek.clintgeek.com/api'; // Default for production
@@ -11,7 +12,7 @@ if (import.meta.env.DEV) {
 }
 
 // Create axios instance
-console.log('ApiService: Using API_URL:', API_URL);
+logger.info('ApiService: Using API_URL:', API_URL);
 const api = axios.create({
   baseURL: API_URL,
   headers: {
@@ -41,7 +42,7 @@ export const setAuthToken = (token) => {
 // Request interceptor for adding auth token
 api.interceptors.request.use(
   (config) => {
-    console.log('ApiService: Making request to:', config.url, 'Full URL:', config.baseURL + config.url);
+    logger.debug('ApiService: Request →', config.method?.toUpperCase() || 'GET', config.baseURL + config.url);
 
     // Check for baseGeek token first
     const geekToken = localStorage.getItem('geek_token');
@@ -59,7 +60,7 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
-    console.error('[ApiService] Request error:', error);
+    logger.error('[ApiService] Request error:', error);
     return Promise.reject(error);
   }
 );
@@ -72,13 +73,13 @@ api.interceptors.response.use(
   (error) => {
     // Handle network errors
     if (!error.response) {
-      console.error('[ApiService] Network error:', error.message);
+      logger.error('[ApiService] Network error:', error.message);
       return Promise.reject(new Error('Network error. Please check your connection.'));
     }
 
     // Handle API errors
     const { status, data } = error.response;
-    console.error(`[ApiService] Error ${status}:`, data);
+    logger.error(`[ApiService] Error ${status}:`, data);
 
     switch (status) {
       case 401:

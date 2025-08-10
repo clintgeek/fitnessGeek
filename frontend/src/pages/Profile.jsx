@@ -44,6 +44,7 @@ import { useSettings } from '../hooks/useSettings.js';
 import { userService } from '../services/userService.js';
 import { settingsService } from '../services/settingsService.js';
 import DashboardOrderSettings from '../components/DashboardOrderSettings.jsx';
+import logger from '../utils/logger.js';
 
 const Profile = () => {
   const { user, logout } = useAuth();
@@ -132,12 +133,12 @@ const Profile = () => {
   };
 
   const handleDashboardSettingChange = async (setting, value) => {
-    console.log('Profile: handleDashboardSettingChange called with:', setting, value);
+    logger.debug('Profile: handleDashboardSettingChange', setting, value);
     try {
       const result = await updateDashboardSetting(setting, value);
-      console.log('Profile: update result:', result);
+      logger.debug('Profile: update result', result);
       if (result.success) {
-        console.log('Dashboard setting updated:', setting, value);
+        logger.debug('Dashboard setting updated');
       } else {
         setError('Failed to save setting. Please try again.');
         setTimeout(() => setError(''), 3000);
@@ -153,7 +154,7 @@ const Profile = () => {
     try {
       const result = await updateDashboardSetting('card_order', newOrder);
       if (result.success) {
-        console.log('Dashboard order updated:', newOrder);
+        logger.debug('Dashboard order updated');
       } else {
         setError('Failed to save order. Please try again.');
         setTimeout(() => setError(''), 3000);

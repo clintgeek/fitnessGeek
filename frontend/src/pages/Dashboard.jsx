@@ -31,7 +31,11 @@ import { streakService } from '../services/streakService.js';
 import { MetricCard, DashboardHeader } from '../components/Dashboard';
 import NutritionSummary from '../components/FoodLog/NutritionSummary.jsx';
 import GarminSummaryCard from '../components/Dashboard/GarminSummaryCard.jsx';
+import { dashboardCards } from '../components/Dashboard/cardsRegistry.jsx';
+import { useDerivedMacros } from '../hooks/dashboard/useDerivedMacros.js';
+import { useGarminDaily } from '../hooks/dashboard/useGarminDaily.js';
 import { CircularProgress as Spinner } from '@mui/material';
+import logger from '../utils/logger.js';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -50,6 +54,10 @@ const Dashboard = () => {
   const [garminDaily, setGarminDaily] = useState(null);
   const [macroTargets, setMacroTargets] = useState(null);
   const { dashboardSettings, loading: settingsLoading } = useSettings();
+
+  // Derived hooks
+  const { today: derivedToday } = useDerivedMacros();
+  const { daily: garminDailyHook } = useGarminDaily();
 
   // Load dashboard data
   useEffect(() => {
@@ -132,7 +140,8 @@ const Dashboard = () => {
             setMacroTargets({
               protein: Math.round(today.protein_g || 0),
               fat: Math.round(today.fat_g || 0),
-              carbs: Math.round(today.carbs_g || 0)
+              carbs: Math.round(today.carbs_g || 0),
+              total: Math.round((today.target_calories ?? today.calories) || 0)
             });
             // Also set calorie goal to target_calories if present
             const newGoals = {
@@ -155,7 +164,7 @@ const Dashboard = () => {
         }
 
       } catch (err) {
-        console.error('Error loading dashboard data:', err);
+        logger.error('Error loading dashboard data:', err);
         setError('Failed to load dashboard data');
       } finally {
         setLoading(false);
@@ -351,7 +360,7 @@ const Dashboard = () => {
             </Grid>
           )}
 
-          {/* Nutrition Summary (reused from Food Log bottom card) */}
+          {/* Nutrition Summary */}
           {dashboardSettings.show_nutrition_today && todaySummary && (
             <Grid xs={12} sx={{ width: '100%', mb: 2 }}>
               <NutritionSummary
@@ -360,7 +369,7 @@ const Dashboard = () => {
                   protein: todaySummary.totals?.protein_grams || 0,
                   carbs: todaySummary.totals?.carbs_grams || 0,
                   fat: todaySummary.totals?.fat_grams || 0,
-                  calorieGoal: goals?.nutrition?.goals?.calories || 0,
+                  calorieGoal: macroTargets?.total || goals?.nutrition?.goals?.calories || 0,
                   proteinGoal: macroTargets?.protein || 0,
                   carbsGoal: macroTargets?.carbs || 0,
                   fatGoal: macroTargets?.fat || 0
@@ -371,15 +380,15 @@ const Dashboard = () => {
           )}
 
           {/* Garmin Highlights in a unified card */}
-          {dashboardSettings.show_garmin_summary && garminDaily && (
+          {dashboardSettings.show_garmin_summary && (garminDaily || garminDailyHook) && (
             <Grid xs={12} sx={{ width: '100%', mb: 2 }}>
               <GarminSummaryCard
-                steps={garminDaily.steps}
-                activeCalories={garminDaily.activeCalories}
-                sleepMinutes={garminDaily.sleepMinutes}
-                restingHR={garminDaily.restingHR}
-                fetchedAt={garminDaily.fetchedAt}
-                lastSyncAt={garminDaily.lastSyncAt}
+                steps={(garminDaily || garminDailyHook).steps}
+                activeCalories={(garminDaily || garminDailyHook).activeCalories}
+                sleepMinutes={(garminDaily || garminDailyHook).sleepMinutes}
+                restingHR={(garminDaily || garminDailyHook).restingHR}
+                fetchedAt={(garminDaily || garminDailyHook).fetchedAt}
+                lastSyncAt={(garminDaily || garminDailyHook).lastSyncAt}
               />
             </Grid>
           )}

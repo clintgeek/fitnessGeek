@@ -1,15 +1,16 @@
 import { apiService } from './apiService.js';
+import logger from '../utils/logger.js';
 
 export const settingsService = {
   // Get user settings
   getSettings: async () => {
     try {
-      console.log('SettingsService: Getting settings...');
+      logger.debug('SettingsService: getSettings');
       const response = await apiService.get('/settings');
-      console.log('SettingsService: Response:', response);
+      logger.debug('SettingsService: getSettings OK');
       return response;
     } catch (error) {
-      console.error('Error getting user settings:', error);
+      logger.error('Error getting user settings:', error);
       throw error;
     }
   },
@@ -28,12 +29,12 @@ export const settingsService = {
   // Update dashboard settings specifically
   updateDashboardSettings: async (dashboardSettings) => {
     try {
-      console.log('SettingsService: Updating dashboard settings:', dashboardSettings);
+      logger.debug('SettingsService: updateDashboardSettings payload');
       const response = await apiService.put('/settings/dashboard', dashboardSettings);
-      console.log('SettingsService: Update response:', response);
+      logger.debug('SettingsService: updateDashboardSettings OK');
       return response;
     } catch (error) {
-      console.error('Error updating dashboard settings:', error);
+      logger.error('Error updating dashboard settings:', error);
       throw error;
     }
   },
@@ -41,12 +42,12 @@ export const settingsService = {
   // Update AI settings specifically
   updateAISettings: async (aiSettings) => {
     try {
-      console.log('SettingsService: Updating AI settings:', aiSettings);
+      logger.debug('SettingsService: updateAISettings payload');
       const response = await apiService.put('/settings/ai', aiSettings);
-      console.log('SettingsService: AI update response:', response);
+      logger.debug('SettingsService: updateAISettings OK');
       return response;
     } catch (error) {
-      console.error('Error updating AI settings:', error);
+      logger.error('Error updating AI settings:', error);
       throw error;
     }
   },

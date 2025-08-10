@@ -1,15 +1,16 @@
 import { apiService } from './apiService.js';
+import logger from '../utils/logger.js';
 
 export const streakService = {
   // Get user's login streak
   async getLoginStreak() {
     try {
-      console.log('StreakService: Making API call to /streaks/login');
+      logger.debug('StreakService: GET /streaks/login');
       const response = await apiService.get('/streaks/login');
-      console.log('StreakService: API response:', response);
+      logger.debug('StreakService: response OK');
       return response;
     } catch (error) {
-      console.error('Error fetching login streak:', error);
+      logger.error('Error fetching login streak:', error);
       throw error;
     }
   },

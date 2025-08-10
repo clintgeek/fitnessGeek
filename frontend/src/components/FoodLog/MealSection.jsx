@@ -66,7 +66,7 @@ const MealSection = ({
 
       // Safety check for food_item
       if (!food_item) {
-        console.warn('Food item or nutrition data missing in meal section:', log);
+        // Missing nutrition data in meal section; skipping this item
         return totals;
       }
 
