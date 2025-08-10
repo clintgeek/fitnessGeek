@@ -107,14 +107,14 @@ const MetricCard = ({
             </Box>
           </Box>
 
-          {progress && (
+          {typeof progress === 'number' && (
             <Box sx={{ mt: 'auto' }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                 <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
                   {progressLabel}
                 </Typography>
                 <Typography variant="body2" sx={{ fontWeight: 600, color: theme.palette.text.primary }}>
-                  {progressValue}%
+                  {typeof progressValue === 'number' ? progressValue : Math.round(progress)}%
                 </Typography>
               </Box>
               <LinearProgress

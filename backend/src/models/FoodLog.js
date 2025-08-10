@@ -98,22 +98,26 @@ foodLogSchema.virtual('calculatedNutrition').get(function() {
   };
 });
 
-// Helper: parse YYYY-MM-DD as a local date (avoid UTC shift)
-function toLocalDate(date) {
+// Helper: parse YYYY-MM-DD as a UTC date (timezone-agnostic across servers)
+function toUtcDate(date) {
   if (typeof date === 'string') {
     const [y, m, d] = date.split('-').map(Number);
-    return new Date(y, (m || 1) - 1, d || 1);
+    return new Date(Date.UTC(y, (m || 1) - 1, d || 1));
+  }
+  // If a Date was provided, normalize to same Y-M-D at UTC midnight
+  if (date instanceof Date) {
+    return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
   }
   return new Date(date);
 }
 
 // Static method to get logs for a specific date
 foodLogSchema.statics.getLogsForDate = async function(userId, date) {
-  const startDate = toLocalDate(date);
-  startDate.setHours(0, 0, 0, 0);
+  const startDate = toUtcDate(date);
+  startDate.setUTCHours(0, 0, 0, 0);
 
-  const endDate = toLocalDate(date);
-  endDate.setHours(23, 59, 59, 999);
+  const endDate = toUtcDate(date);
+  endDate.setUTCHours(23, 59, 59, 999);
 
   return await this.find({
     user_id: userId,
@@ -125,11 +129,11 @@ foodLogSchema.statics.getLogsForDate = async function(userId, date) {
 
 // Static method to get logs for a date range
 foodLogSchema.statics.getLogsForDateRange = async function(userId, startDate, endDate) {
-  const start = toLocalDate(startDate);
-  start.setHours(0, 0, 0, 0);
+  const start = toUtcDate(startDate);
+  start.setUTCHours(0, 0, 0, 0);
 
-  const end = toLocalDate(endDate);
-  end.setHours(23, 59, 59, 999);
+  const end = toUtcDate(endDate);
+  end.setUTCHours(23, 59, 59, 999);
 
   return await this.find({
     user_id: userId,
@@ -149,11 +153,11 @@ foodLogSchema.statics.getRecentLogs = async function(userId, limit = 10) {
 
 // Static method to get logs by meal type
 foodLogSchema.statics.getLogsByMealType = async function(userId, mealType, date) {
-  const startDate = toLocalDate(date);
-  startDate.setHours(0, 0, 0, 0);
+  const startDate = toUtcDate(date);
+  startDate.setUTCHours(0, 0, 0, 0);
 
-  const endDate = toLocalDate(date);
-  endDate.setHours(23, 59, 59, 999);
+  const endDate = toUtcDate(date);
+  endDate.setUTCHours(23, 59, 59, 999);
 
   return await this.find({
     user_id: userId,
