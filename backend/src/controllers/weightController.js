@@ -321,19 +321,36 @@ const getWeightStats = async (req, res) => {
 
     const weights = weightLogs.map(log => log.weight_value);
     const currentWeight = weights[weights.length - 1];
+    const previousWeight = weights.length > 1 ? weights[weights.length - 2] : null;
     const startWeight = weights[0];
     const lowestWeight = Math.min(...weights);
     const highestWeight = Math.max(...weights);
     const averageWeight = weights.reduce((sum, weight) => sum + weight, 0) / weights.length;
     const totalChange = currentWeight - startWeight;
 
-    // Calculate weekly and monthly changes
+    // Calculate weekly and monthly changes using start-of-day boundaries
     const now = new Date();
-    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    const startOfWeekAgo = new Date(startOfToday.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const startOfMonthAgo = new Date(startOfToday.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-    const weekAgoLog = weightLogs.find(log => log.log_date >= weekAgo);
-    const monthAgoLog = weightLogs.find(log => log.log_date >= monthAgo);
+    // Helper: find reference log as the most recent log at or before cutoff;
+    // if none, fall back to the earliest log at or after cutoff.
+    const findReferenceLog = (logs, cutoff) => {
+      // logs are sorted ascending by log_date
+      let beforeIdx = -1;
+      for (let i = logs.length - 1; i >= 0; i--) {
+        if (logs[i].log_date <= cutoff) {
+          beforeIdx = i;
+          break;
+        }
+      }
+      if (beforeIdx !== -1) return logs[beforeIdx];
+      return logs.find(l => l.log_date >= cutoff) || null;
+    };
+
+    const weekAgoLog = findReferenceLog(weightLogs, startOfWeekAgo);
+    const monthAgoLog = findReferenceLog(weightLogs, startOfMonthAgo);
 
     const weeklyChange = weekAgoLog ? currentWeight - weekAgoLog.weight_value : null;
     const monthlyChange = monthAgoLog ? currentWeight - monthAgoLog.weight_value : null;
@@ -348,8 +365,9 @@ const getWeightStats = async (req, res) => {
         highestWeight,
         averageWeight: parseFloat(averageWeight.toFixed(1)),
         totalChange: parseFloat(totalChange.toFixed(1)),
-        weeklyChange: weeklyChange ? parseFloat(weeklyChange.toFixed(1)) : null,
-        monthlyChange: monthlyChange ? parseFloat(monthlyChange.toFixed(1)) : null
+        weeklyChange: weekAgoLog ? parseFloat(weeklyChange.toFixed(1)) : null,
+        monthlyChange: monthAgoLog ? parseFloat(monthlyChange.toFixed(1)) : null,
+        recentChange: previousWeight != null ? parseFloat((currentWeight - previousWeight).toFixed(1)) : null
       }
     });
   } catch (error) {

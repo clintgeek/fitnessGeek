@@ -90,18 +90,22 @@ const dailySummarySchema = new mongoose.Schema({
 // Compound index for user and date
 dailySummarySchema.index({ user_id: 1, date: 1 }, { unique: true });
 
-function parseLocalDate(input) {
+// Normalize a provided date (string YYYY-MM-DD or Date) to a UTC date at midnight.
+// This mirrors the behavior used when storing and querying FoodLog entries so that
+// dev (local) and prod (UTC) yield the same calendar day.
+function toUtcDate(input) {
   if (typeof input === 'string') {
     const [y, m, d] = input.split('-').map(Number);
-    return new Date(y, (m || 1) - 1, d || 1);
+    return new Date(Date.UTC(y, (m || 1) - 1, d || 1));
   }
-  return new Date(input);
+  const date = new Date(input);
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
 }
 
 // Static method to get or create daily summary
 dailySummarySchema.statics.getOrCreate = async function(userId, date) {
-  const startDate = parseLocalDate(date);
-  startDate.setHours(0, 0, 0, 0);
+  const startDate = toUtcDate(date);
+  startDate.setUTCHours(0, 0, 0, 0);
 
   let summary = await this.findOne({
     user_id: userId,
@@ -123,11 +127,11 @@ dailySummarySchema.statics.getOrCreate = async function(userId, date) {
 dailySummarySchema.statics.updateFromLogs = async function(userId, date) {
   const FoodLog = mongoose.model('FoodLog');
 
-  const startDate = parseLocalDate(date);
-  startDate.setHours(0, 0, 0, 0);
+  const startDate = toUtcDate(date);
+  startDate.setUTCHours(0, 0, 0, 0);
 
-  const endDate = parseLocalDate(date);
-  endDate.setHours(23, 59, 59, 999);
+  const endDate = toUtcDate(date);
+  endDate.setUTCHours(23, 59, 59, 999);
 
   // Get all logs for the date
   const logs = await FoodLog.find({

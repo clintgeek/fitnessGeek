@@ -53,6 +53,7 @@ const Dashboard = () => {
   const [loginStreak, setLoginStreak] = useState({ current: 0, longest: 0 });
   const [garminDaily, setGarminDaily] = useState(null);
   const [macroTargets, setMacroTargets] = useState(null);
+  const [weightGoal, setWeightGoal] = useState(null);
   const { dashboardSettings, loading: settingsLoading } = useSettings();
 
   // Derived hooks
@@ -111,7 +112,7 @@ const Dashboard = () => {
           }
         }
 
-        // Handle goals from settings
+        // Handle goals from settings (nutrition + weight)
         if (goalsData.status === 'fulfilled' && goalsData.value) {
           const resp = goalsData.value;
           const data = resp.data || resp;
@@ -128,6 +129,29 @@ const Dashboard = () => {
             setGoals({ nutrition: { goals: { calories: Math.round(dayTarget || 0) } } });
           } else {
             setGoals(null);
+          }
+
+          // Map weight goal from various possible shapes
+          const wgRaw = data?.weight_goal
+            || data?.goals?.weight_goal
+            || data?.wizard?.weight_goal
+            || data?.fitness?.weight_goal;
+
+          const mapWeightGoal = (wgCandidate) => {
+            if (!wgCandidate) return null;
+            const enabled = (wgCandidate.enabled ?? wgCandidate.is_active ?? true) === true;
+            const startWeight = wgCandidate.start_weight ?? wgCandidate.startWeight ?? null;
+            const targetWeight = wgCandidate.target_weight ?? wgCandidate.targetWeight ?? null;
+            const startDate = wgCandidate.start_date ?? wgCandidate.startDate ?? null;
+            const goalDate = wgCandidate.estimated_end_date ?? wgCandidate.goal_date ?? wgCandidate.goalDate ?? null;
+            return { enabled, startWeight, targetWeight, startDate, goalDate };
+          };
+
+          const mappedWg = mapWeightGoal(wgRaw);
+          if (mappedWg && mappedWg.enabled && mappedWg.startWeight != null && mappedWg.targetWeight != null) {
+            setWeightGoal(mappedWg);
+          } else {
+            setWeightGoal(null);
           }
         }
 
@@ -259,49 +283,97 @@ const Dashboard = () => {
           {/* Weight Progress */}
           {dashboardSettings.show_current_weight && weightStats && (
             <Grid xs={12} sx={{ width: '100%', mb: 2 }}>
-              <MetricCard
-                value={weightStats.weeklyChange ? (
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    {getWeightChangeIcon(weightStats.weeklyChange)}
-                    <Typography
-                      variant="h4"
-                      sx={{
-                        ml: 0.5,
-                        fontWeight: 600,
-                        fontSize: { xs: '1.5rem', sm: '2rem' }
-                      }}
-                    >
-                      {weightStats.weeklyChange > 0 ? '+' : ''}{weightStats.weeklyChange.toFixed(1)} lbs
-                    </Typography>
-                  </Box>
-                ) : (
-                  'No change'
-                )}
-                subtitle="this week"
-                icon={<WeightIcon />}
-                color="info"
-                timeout={400}
-                onClick={() => navigate('/weight')}
-              >
-                {weightStats.totalChange && (
-                  <Box sx={{
-                    p: 2,
-                    backgroundColor: theme.palette.grey[50],
-                    borderRadius: 2,
-                    mt: 2,
-                    border: `1px solid ${theme.palette.grey[200]}`
-                  }}>
-                    <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
-                      Overall change
-                    </Typography>
-                    <Typography variant="h6" sx={{ fontWeight: 600, mt: 0.5, color: theme.palette.text.primary }}>
-                      {weightStats.totalChange > 0 ? '+' : ''}{weightStats.totalChange.toFixed(1)} lbs
-                    </Typography>
-                  </Box>
-                )}
-              </MetricCard>
+              {(() => {
+                const hasWeekly = weightStats.weeklyChange !== null && weightStats.weeklyChange !== undefined;
+                const weeklyNonZero = hasWeekly && weightStats.weeklyChange !== 0;
+                const hasRecent = weightStats.recentChange !== null && weightStats.recentChange !== undefined;
+                const recentNonZero = hasRecent && weightStats.recentChange !== 0;
+                const useWeekly = weeklyNonZero;
+                const useRecent = !useWeekly && recentNonZero;
+                const changeValue = useWeekly ? weightStats.weeklyChange : (useRecent ? weightStats.recentChange : 0);
+                const subtitleText = useWeekly ? 'this week' : (useRecent ? 'since last log' : 'this week');
+
+                return (
+                  <MetricCard
+                    value={changeValue !== 0 ? (
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        {getWeightChangeIcon(changeValue)}
+                        <Typography
+                          variant="h4"
+                          sx={{
+                            ml: 0.5,
+                            fontWeight: 600,
+                            fontSize: { xs: '1.5rem', sm: '2rem' }
+                          }}
+                        >
+                          {changeValue > 0 ? '+' : ''}{changeValue.toFixed(1)} lbs
+                        </Typography>
+                      </Box>
+                    ) : (
+                      'No change'
+                    )}
+                    subtitle={subtitleText}
+                    icon={<WeightIcon />}
+                    color="info"
+                    timeout={400}
+                    onClick={() => navigate('/weight')}
+                  >
+                    <Box sx={{
+                      p: 2,
+                      backgroundColor: theme.palette.grey[50],
+                      borderRadius: 2,
+                      mt: 2,
+                      border: `1px solid ${theme.palette.grey[200]}`
+                    }}>
+                      {weightGoal && weightGoal.enabled && weightStats?.currentWeight != null && (
+                        <>
+                          <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
+                            Goal progress change
+                          </Typography>
+                          <Typography variant="h6" sx={{ fontWeight: 600, mt: 0.5, color: theme.palette.text.primary }}>
+                            {(() => {
+                              const gp = (parseFloat(weightStats.currentWeight) - parseFloat(weightGoal.startWeight));
+                              return `${gp > 0 ? '+' : ''}${gp.toFixed(1)} lbs`;
+                            })()}
+                          </Typography>
+
+                          {weightGoal.targetWeight != null && (
+                            <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mt: 1.5 }}>
+                              Progress remaining
+                            </Typography>
+                          )}
+                          {weightGoal.targetWeight != null && (
+                            <Typography variant="subtitle2" sx={{ fontWeight: 600, mt: 0.5, color: theme.palette.text.primary }}>
+                              {(() => {
+                                const current = parseFloat(weightStats.currentWeight);
+                                const target = parseFloat(weightGoal.targetWeight);
+                                const remaining = Math.abs(current - target);
+                                const direction = current > target ? 'to lose' : current < target ? 'to gain' : '';
+                                return `${remaining.toFixed(1)} lbs ${direction}`.trim();
+                              })()}
+                            </Typography>
+                          )}
+                        </>
+                      )}
+
+                      {(!weightGoal || !weightGoal.enabled || weightStats?.currentWeight == null) && weightStats.totalChange != null && (
+                        <>
+                          <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
+                            Overall change
+                          </Typography>
+                          <Typography variant="h6" sx={{ fontWeight: 600, mt: 0.5, color: theme.palette.text.primary }}>
+                            {weightStats.totalChange > 0 ? '+' : ''}{weightStats.totalChange.toFixed(1)} lbs
+                          </Typography>
+                        </>
+                      )}
+                    </Box>
+                  </MetricCard>
+                );
+              })()}
             </Grid>
           )}
+
+
 
           {/* Blood Pressure */}
           {dashboardSettings.show_blood_pressure && latestBP && (
