@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Box, Typography, TextField, Button, Chip, Divider, Paper, Stack, IconButton, ToggleButton, ToggleButtonGroup, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import EditIcon from '@mui/icons-material/Edit';
@@ -45,8 +45,21 @@ export default function Medications() {
   const [userTags, setUserTags] = useState([]);
   const [newTag, setNewTag] = useState('');
   const [medType, setMedType] = useState('rx');
-  const [supplyStartDate, setSupplyStartDate] = useState('');
-  const [daysSupply, setDaysSupply] = useState('');
+  const [currentDaysSupply, setCurrentDaysSupply] = useState('');
+
+  const editorRef = useRef(null);
+  const nameInputRef = useRef(null);
+
+  const scrollToEditorFocus = () => {
+    setTimeout(() => {
+      if (editorRef.current) {
+        editorRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      if (nameInputRef.current) {
+        try { nameInputRef.current.focus(); } catch (_) {}
+      }
+    }, 0);
+  };
 
   useEffect(() => {
     medsService.list().then(r => setMyMeds(r.data || [])).catch(() => {});
@@ -76,6 +89,7 @@ export default function Medications() {
     }
     setSelectedStrength(null);
     setEditingMed(null);
+    scrollToEditorFocus();
   };
 
   const buildPayload = () => ({
@@ -88,8 +102,8 @@ export default function Medications() {
     times_of_day: timesOfDay,
     suggested_indications: details?.suggested || editingMed?.suggested_indications || [],
     user_indications: userTags,
-    supply_start_date: supplyStartDate || null,
-    days_supply: daysSupply ? Number(daysSupply) : null,
+    supply_start_date: currentDaysSupply ? new Date().toISOString().slice(0,10) : null,
+    days_supply: currentDaysSupply ? Number(currentDaysSupply) : null,
   });
 
   const saveMedication = async () => {
@@ -109,6 +123,18 @@ export default function Medications() {
     setEditingMed(null);
   };
 
+  const cancelEdit = () => {
+    setSelected(null);
+    setEditingMed(null);
+    setDisplayName('');
+    setTimesOfDay([]);
+    setUserTags([]);
+    setSelectedStrength(null);
+    setDetails(null);
+    setMedType('rx');
+    setCurrentDaysSupply('');
+  };
+
   const startEdit = async (m) => {
     setEditingMed(m);
     setSelected(null);
@@ -116,8 +142,16 @@ export default function Medications() {
     setTimesOfDay(m.times_of_day || []);
     setUserTags(m.user_indications || []);
     setMedType(m.med_type || 'rx');
-    setSupplyStartDate(m.supply_start_date ? (new Date(m.supply_start_date).toISOString().slice(0,10)) : '');
-    setDaysSupply(m.days_supply ? String(m.days_supply) : '');
+    // Prefill current days supply as remaining (days_supply - elapsed)
+    if (m.supply_start_date && m.days_supply) {
+      const start = new Date(m.supply_start_date);
+      const today = new Date();
+      const elapsed = Math.max(0, Math.floor((today - start) / (1000*60*60*24)));
+      const remaining = Math.max(0, Number(m.days_supply) - elapsed);
+      setCurrentDaysSupply(String(remaining));
+    } else {
+      setCurrentDaysSupply('');
+    }
     setSelectedStrength(null);
     if (m.rxcui) {
       try {
@@ -131,6 +165,7 @@ export default function Medications() {
     } else {
       setDetails({ strengths: [], suggested: [] });
     }
+    scrollToEditorFocus();
   };
 
   const removeMed = async (med) => {
@@ -160,10 +195,10 @@ export default function Medications() {
       </Paper>
 
       {(selected || editingMed) && (
-        <Paper sx={{ p: 2, mb: 2 }}>
+        <Paper ref={editorRef} sx={{ p: 2, mb: 2 }}>
           <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>{editingMed ? 'Edit Medication' : 'Add Medication'}</Typography>
           <Stack spacing={2}>
-            <TextField label="Display name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
+            <TextField inputRef={nameInputRef} label="Display name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
             {Array.isArray(details?.strengths) && details.strengths.length > 0 && (
               <FormControl fullWidth>
                 <InputLabel id="strength-label">Strength</InputLabel>
@@ -203,22 +238,13 @@ export default function Medications() {
                 ))}
               </ToggleButtonGroup>
             </Box>
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <TextField
-                label="Supply start date"
-                type="date"
-                value={supplyStartDate}
-                onChange={(e) => setSupplyStartDate(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-              />
-              <TextField
-                label="Days supply"
-                type="number"
-                inputProps={{ min: 1, max: 3650 }}
-                value={daysSupply}
-                onChange={(e) => setDaysSupply(e.target.value)}
-              />
-            </Stack>
+            <TextField
+              label="Current days supply"
+              type="number"
+              inputProps={{ min: 1, max: 3650 }}
+              value={currentDaysSupply}
+              onChange={(e) => setCurrentDaysSupply(e.target.value)}
+            />
 
             {((details?.suggested?.length || 0) > 0) && (
               <Box>
@@ -256,6 +282,7 @@ export default function Medications() {
               ) : (
                 <Button variant="contained" startIcon={<SaveIcon />} onClick={saveMedication}>Save</Button>
               )}
+              <Button variant="outlined" onClick={cancelEdit}>Cancel</Button>
             </Stack>
           </Stack>
         </Paper>
@@ -294,27 +321,16 @@ export default function Medications() {
                           if (start && days) {
                             const today = new Date();
                             const elapsed = Math.max(0, Math.floor((today - start) / (1000*60*60*24)));
-                            const pctUsed = Math.min(100, Math.round((elapsed / days) * 100));
-                            const pctLeft = Math.max(0, 100 - pctUsed);
-                            const runout = new Date(start.getTime() + days * 24*60*60*1000);
-
+                            const remaining = Math.max(0, days - elapsed);
                             let chipSx = { ml: 1 };
-                            if (pctLeft > 66) {
-                              chipSx = { ml: 1, bgcolor: '#C8E6C9', color: '#1B5E20' }; // light green
-                            } else if (pctLeft > 32) {
-                              chipSx = { ml: 1, bgcolor: '#FFF9C4', color: '#795548' }; // light yellow
-                            } else if (pctLeft > 9) {
-                              chipSx = { ml: 1, bgcolor: '#FFE0B2', color: '#E65100' }; // light orange
+                            if (remaining > 30) {
+                              chipSx = { ml: 1, bgcolor: '#C8E6C9', color: '#1B5E20' }; // green tint
+                            } else if (remaining >= 15) {
+                              chipSx = { ml: 1, bgcolor: '#FFF9C4', color: '#795548' }; // yellow tint
                             } else {
-                              chipSx = { ml: 1, bgcolor: '#FFCDD2', color: '#B71C1C' }; // light red
+                              chipSx = { ml: 1, bgcolor: '#FFCDD2', color: '#B71C1C' }; // red tint
                             }
-
-                            return (
-                              <>
-                                <Chip size="small" sx={chipSx} label={`${pctLeft}% left`} />
-                                <Chip size="small" sx={{ ml: 1 }} label={`Run out: ${runout.toISOString().slice(0,10)}`} />
-                              </>
-                            );
+                            return <Chip size="small" sx={chipSx} label={`${remaining} days left`} />;
                           }
                           return null;
                         })()}
