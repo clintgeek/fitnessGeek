@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const MED_TIME_OF_DAY = ['morning', 'afternoon', 'evening'];
+const MED_TIME_OF_DAY = ['morning', 'afternoon', 'evening', 'bedtime'];
 
 const medicationLogSchema = new mongoose.Schema({
   user_id: {

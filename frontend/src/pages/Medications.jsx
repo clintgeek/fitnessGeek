@@ -1,12 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Box, Typography, TextField, Button, Chip, Divider, Paper, Stack, IconButton, ToggleButton, ToggleButtonGroup, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import SearchIcon from '@mui/icons-material/Search';
 import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
 import DeleteIcon from '@mui/icons-material/Delete';
 import medsService from '../services/medsService.js';
 
-const TIME_OPTIONS = ['morning', 'afternoon', 'evening'];
+const TIME_OPTIONS = ['morning', 'afternoon', 'evening', 'bedtime'];
 
 function SuggestionChips({ suggestions, userTags, onChange }) {
   const selected = new Set(userTags || []);
@@ -59,6 +61,196 @@ export default function Medications() {
         try { nameInputRef.current.focus(); } catch (_) {}
       }
     }, 0);
+  };
+
+  const computeRemainingAndRunout = (m) => {
+    const start = m.supply_start_date ? new Date(m.supply_start_date) : null;
+    const days = m.days_supply || null;
+    if (!start || !days) return { remaining: null, runout: null };
+    const today = new Date();
+    const elapsed = Math.max(0, Math.floor((today - start) / (1000*60*60*24)));
+    const remaining = Math.max(0, days - elapsed);
+    const runout = new Date(start.getTime() + days * 24*60*60*1000);
+    return { remaining, runout: runout.toISOString().slice(0,10) };
+  };
+
+  const buildExportText = () => {
+    const order = { rx: 0, otc: 1, supplement: 2 };
+    const lines = [];
+    lines.push('Medications & Supplements');
+    lines.push(`Generated: ${new Date().toISOString()}`);
+    lines.push('');
+    TIME_OPTIONS.forEach(slot => {
+      const slotMeds = (myMeds || [])
+        .filter(m => (m.times_of_day || []).includes(slot))
+        .sort((a, b) => {
+          const tA = (a.med_type || 'rx');
+          const tB = (b.med_type || 'rx');
+          if (order[tA] !== order[tB]) return order[tA] - order[tB];
+          return (a.display_name || '').localeCompare(b.display_name || '');
+        });
+      if (slotMeds.length === 0) return;
+      lines.push(`${slot.toUpperCase()}`);
+      slotMeds.forEach(m => {
+        const type = (m.med_type || 'rx').toUpperCase();
+        const strength = m.strength ? ` ${m.strength}` : '';
+        const tags = (m.user_indications || []).join(', ');
+        const { remaining, runout } = computeRemainingAndRunout(m);
+        const supply = remaining != null ? ` | ${remaining} days left${runout ? ` (run-out ${runout})` : ''}` : '';
+        lines.push(`- ${m.display_name}${strength} [${type}]${tags ? ` | Indications: ${tags}` : ''}${supply}`);
+      });
+      lines.push('');
+    });
+    return lines.join('\n');
+  };
+
+  const handleCopyExport = async () => {
+    const text = buildExportText();
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (_) {
+      // no-op
+    }
+  };
+
+  const handleDownloadExport = () => {
+    const text = buildExportText();
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `medications_${new Date().toISOString().slice(0,10)}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    URL.revokeObjectURL(url);
+    a.remove();
+  };
+
+  const handleDownloadPdf = async () => {
+    const doc = new jsPDF({ unit: 'pt', format: 'letter' });
+    const page = { w: 612, h: 792 };
+    const margin = 40;
+    let y = margin;
+
+    const order = { rx: 0, otc: 1, supplement: 2 };
+    const bySlot = TIME_OPTIONS.map(slot => ({
+      slot,
+      meds: (myMeds || [])
+        .filter(m => (m.times_of_day || []).includes(slot))
+        .sort((a, b) => {
+          const tA = (a.med_type || 'rx');
+          const tB = (b.med_type || 'rx');
+          if (order[tA] !== order[tB]) return order[tA] - order[tB];
+          return (a.display_name || '').localeCompare(b.display_name || '');
+        })
+    })).filter(s => s.meds.length > 0);
+
+    // Header
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.text('Medications & Supplements', margin, y);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, margin, y + 16);
+    y += 36;
+
+    // Legend
+    const legend = [
+      { label: 'RX = Prescription', color: '#263238' },
+      { label: 'OTC = Over-the-counter', color: '#263238' },
+      { label: 'SUPPLEMENT', color: '#263238' },
+    ];
+    legend.forEach((l, i) => {
+      doc.setFontSize(10);
+      doc.text(l.label, margin + i * 170, y);
+    });
+    y += 16;
+
+    const drawSectionHeader = (title) => {
+      // Gray band with section title
+      doc.setFillColor('#ECEFF1');
+      doc.rect(margin, y, page.w - margin * 2, 22, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.text(title.toUpperCase(), margin + 8, y + 15);
+      y += 26;
+    };
+
+    const columns = [
+      { key: 'name', title: 'Name', width: 240 },
+      { key: 'type', title: 'Type', width: 80 },
+      { key: 'ind', title: 'Indications', width: 150 },
+      { key: 'days', title: 'Days Left', width: 60 },
+    ];
+
+    const drawTableHeader = () => {
+      doc.setFillColor('#F5F5F5');
+      doc.rect(margin, y, page.w - margin * 2, 22, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      let x = margin + 8;
+      columns.forEach(col => {
+        doc.text(col.title, x, y + 14);
+        x += col.width;
+      });
+      y += 26;
+    };
+
+    const ensureRoom = (needed = 26) => {
+      if (y + needed > page.h - margin) {
+        doc.addPage();
+        y = margin;
+      }
+    };
+
+    const drawRow = (row, idx) => {
+      const rowHeight = 18 * Math.max(
+        1,
+        ...columns.map(col => doc.splitTextToSize(row[col.key] || '', col.width - 8).length)
+      );
+      ensureRoom(rowHeight + 6);
+      // alternate row fill
+      if (idx % 2 === 0) {
+        doc.setFillColor('#FAFAFA');
+        doc.rect(margin, y - 4, page.w - margin * 2, rowHeight + 8, 'F');
+      }
+      let x = margin + 8;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      columns.forEach(col => {
+        const text = doc.splitTextToSize(row[col.key] || '', col.width - 8);
+        doc.text(text, x, y);
+        x += col.width;
+      });
+      y += rowHeight + 6;
+    };
+
+    bySlot.forEach(section => {
+      ensureRoom(60);
+      drawSectionHeader(section.slot);
+      drawTableHeader();
+      const rows = section.meds.map(m => {
+        const { remaining } = computeRemainingAndRunout(m) || {};
+        return {
+          name: m.display_name || '',
+          type: (m.med_type || 'rx').toUpperCase(),
+          ind: (m.user_indications || []).join(', '),
+          days: remaining != null ? String(remaining) : '',
+        };
+      });
+      rows.forEach((r, idx) => drawRow(r, idx));
+      y += 6;
+    });
+
+    // Footer page numbers
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(9);
+      doc.text(`Page ${i} of ${pageCount}`, page.w - margin - 80, page.h - margin / 2);
+    }
+
+    doc.save(`medications_${new Date().toISOString().slice(0,10)}.pdf`);
   };
 
   useEffect(() => {
@@ -175,7 +367,14 @@ export default function Medications() {
 
   return (
     <Box sx={{ p: 2 }}>
-      <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>Medications & Supplements</Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h5" sx={{ fontWeight: 600, mr: 'auto' }}>Medications & Supplements</Typography>
+        <Stack direction="row" spacing={1}>
+          <Button size="small" variant="outlined" onClick={handleCopyExport}>Copy text</Button>
+          <Button size="small" variant="outlined" onClick={handleDownloadExport}>Download .txt</Button>
+          <Button size="small" variant="outlined" onClick={handleDownloadPdf}>Download PDF</Button>
+        </Stack>
+      </Box>
 
       <Paper sx={{ p: 2, mb: 2 }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
@@ -306,8 +505,8 @@ export default function Medications() {
                     return (a.display_name || '').localeCompare(b.display_name || '');
                   })
                   .map(m => (
-                  <Paper key={m._id} sx={{ p: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Box>
+                  <Paper key={m._id} sx={{ p: 1.5, display: 'flex', alignItems: 'center' }}>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Typography variant="body1" sx={{ fontWeight: 500 }}>{m.display_name}</Typography>
                       <Typography variant="caption" color="text.secondary">{m.strength || ''}</Typography>
                       <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
@@ -336,14 +535,18 @@ export default function Medications() {
                         })()}
                       </Box>
                     </Box>
-                    <Box>
-                      <IconButton sx={{ mr: 1 }} color="primary" onClick={() => startEdit(m)}>
+                    <Stack
+                      direction={{ xs: 'column', sm: 'column', md: 'row' }}
+                      spacing={{ xs: 0.5, md: 1 }}
+                      sx={{ alignItems: { xs: 'flex-end', md: 'center' }, ml: 'auto', mr: '5px' }}
+                    >
+                      <IconButton size="small" color="primary" onClick={() => startEdit(m)}>
                         <EditIcon />
                       </IconButton>
-                      <IconButton color="error" onClick={() => removeMed(m)}>
+                      <IconButton size="small" color="error" onClick={() => removeMed(m)}>
                         <DeleteIcon />
                       </IconButton>
-                    </Box>
+                    </Stack>
                   </Paper>
                 ))}
                 {myMeds.filter(m => (m.times_of_day || []).includes(slot)).length === 0 && (
