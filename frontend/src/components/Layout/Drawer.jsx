@@ -16,6 +16,7 @@ import {
   Restaurant as FoodIcon,
   LocalDining as MyFoodsIcon,
   RestaurantMenu as MyMealsIcon,
+  MedicalServices as MedicationIcon,
   Flag as GoalsIcon,
   Calculate as CalorieIcon,
   Logout as LogoutIcon
@@ -38,6 +39,12 @@ const AppDrawer = ({ open, onClose }) => {
   };
 
   const menuItems = [
+    {
+      text: 'Medications',
+      icon: <MedicationIcon />,
+      path: '/medications',
+      description: 'Track meds & supplements'
+    },
     {
       text: 'Calorie Goal Wizard',
       icon: <CalorieIcon />,

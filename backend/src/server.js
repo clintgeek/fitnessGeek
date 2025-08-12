@@ -63,6 +63,7 @@ app.use('/api/settings', require('./routes/settingsRoutes'));
 app.use('/api/streaks', require('./routes/streakRoutes'));
 app.use('/api/ai', require('./routes/aiRoutes'));
 app.use('/api/fitness', require('./routes/fitnessRoutes'));
+app.use('/api/meds', require('./routes/medicationRoutes'));
 
 // 404 handler
 app.use('*', (req, res) => {

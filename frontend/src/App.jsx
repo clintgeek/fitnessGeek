@@ -17,6 +17,7 @@ import MyMeals from './pages/MyMeals.jsx';
 import Recipes from './pages/Recipes.jsx';
 import Weight from './pages/Weight.jsx';
 import BloodPressure from './pages/BloodPressure.jsx';
+import Medications from './pages/Medications.jsx';
 import Profile from './pages/Profile.jsx';
 import Settings from './pages/Settings.jsx';
 // Removed legacy Goals page
@@ -59,6 +60,7 @@ function App() {
                   <Route path="recipes" element={<Recipes />} />
                   <Route path="weight" element={<Weight />} />
                   <Route path="blood-pressure" element={<BloodPressure />} />
+                  <Route path="medications" element={<Medications />} />
                   {/* Legacy goals route removed */}
                   <Route path="calorie-wizard" element={<AIGoalPlanner />} />
                   <Route path="ai-test" element={<AITest />} />
