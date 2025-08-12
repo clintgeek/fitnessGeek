@@ -295,10 +295,23 @@ export default function Medications() {
                             const today = new Date();
                             const elapsed = Math.max(0, Math.floor((today - start) / (1000*60*60*24)));
                             const pctUsed = Math.min(100, Math.round((elapsed / days) * 100));
+                            const pctLeft = Math.max(0, 100 - pctUsed);
                             const runout = new Date(start.getTime() + days * 24*60*60*1000);
+
+                            let chipSx = { ml: 1 };
+                            if (pctLeft > 66) {
+                              chipSx = { ml: 1, bgcolor: '#C8E6C9', color: '#1B5E20' }; // light green
+                            } else if (pctLeft > 32) {
+                              chipSx = { ml: 1, bgcolor: '#FFF9C4', color: '#795548' }; // light yellow
+                            } else if (pctLeft > 9) {
+                              chipSx = { ml: 1, bgcolor: '#FFE0B2', color: '#E65100' }; // light orange
+                            } else {
+                              chipSx = { ml: 1, bgcolor: '#FFCDD2', color: '#B71C1C' }; // light red
+                            }
+
                             return (
                               <>
-                                <Chip size="small" sx={{ ml: 1 }} label={`${Math.max(0, 100 - pctUsed)}% left`} />
+                                <Chip size="small" sx={chipSx} label={`${pctLeft}% left`} />
                                 <Chip size="small" sx={{ ml: 1 }} label={`Run out: ${runout.toISOString().slice(0,10)}`} />
                               </>
                             );
