@@ -17,6 +17,12 @@ const medicationSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  med_type: {
+    type: String,
+    enum: ['rx', 'otc', 'supplement'],
+    default: 'rx',
+    index: true
+  },
   rxcui: {
     type: String,
     default: null,
@@ -66,6 +72,17 @@ const medicationSchema = new mongoose.Schema({
   user_indications: {
     type: [String],
     default: []
+  },
+  // Supply tracking
+  supply_start_date: {
+    type: Date,
+    default: null
+  },
+  days_supply: {
+    type: Number,
+    default: null,
+    min: 1,
+    max: 3650
   },
   notes: {
     type: String,

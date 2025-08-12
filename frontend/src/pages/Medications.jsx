@@ -44,6 +44,9 @@ export default function Medications() {
   const [timesOfDay, setTimesOfDay] = useState([]);
   const [userTags, setUserTags] = useState([]);
   const [newTag, setNewTag] = useState('');
+  const [medType, setMedType] = useState('rx');
+  const [supplyStartDate, setSupplyStartDate] = useState('');
+  const [daysSupply, setDaysSupply] = useState('');
 
   useEffect(() => {
     medsService.list().then(r => setMyMeds(r.data || [])).catch(() => {});
@@ -63,10 +66,14 @@ export default function Medications() {
   const selectCandidate = async (c) => {
     setSelected(c);
     setDisplayName(c?.name || '');
-    const d = await medsService.getDetails(c.rxcui);
-    setDetails(d.data || null);
-    const suggested = d?.data?.suggested || [];
-    setUserTags(suggested);
+    try {
+      const d = await medsService.getDetails(c.rxcui);
+      setDetails(d.data || { strengths: [], suggested: [] });
+      const suggested = d?.data?.suggested || [];
+      setUserTags(suggested);
+    } catch (_) {
+      setDetails({ strengths: [], suggested: [] });
+    }
     setSelectedStrength(null);
     setEditingMed(null);
   };
@@ -74,12 +81,15 @@ export default function Medications() {
   const buildPayload = () => ({
     display_name: displayName || selected?.name || q,
     is_supplement: false,
+    med_type: medType,
     rxcui: (selected?.rxcui || editingMed?.rxcui) || null,
     ingredient_name: details?.ingredient?.name || editingMed?.ingredient_name || null,
     strength: selectedStrength?.name || editingMed?.strength || null,
     times_of_day: timesOfDay,
     suggested_indications: details?.suggested || editingMed?.suggested_indications || [],
     user_indications: userTags,
+    supply_start_date: supplyStartDate || null,
+    days_supply: daysSupply ? Number(daysSupply) : null,
   });
 
   const saveMedication = async () => {
@@ -105,18 +115,21 @@ export default function Medications() {
     setDisplayName(m.display_name || '');
     setTimesOfDay(m.times_of_day || []);
     setUserTags(m.user_indications || []);
+    setMedType(m.med_type || 'rx');
+    setSupplyStartDate(m.supply_start_date ? (new Date(m.supply_start_date).toISOString().slice(0,10)) : '');
+    setDaysSupply(m.days_supply ? String(m.days_supply) : '');
     setSelectedStrength(null);
     if (m.rxcui) {
       try {
         const d = await medsService.getDetails(m.rxcui);
-        setDetails(d.data || { strengths: [] });
+        setDetails(d.data || { strengths: [], suggested: [] });
         const found = (d?.data?.strengths || []).find(s => s.name === m.strength);
         if (found) setSelectedStrength(found);
       } catch (_) {
-        setDetails({ strengths: [] });
+        setDetails({ strengths: [], suggested: [] });
       }
     } else {
-      setDetails({ strengths: [] });
+      setDetails({ strengths: [], suggested: [] });
     }
   };
 
@@ -170,6 +183,14 @@ export default function Medications() {
                 </Select>
               </FormControl>
             )}
+            <FormControl fullWidth>
+              <InputLabel id="type-label">Type</InputLabel>
+              <Select labelId="type-label" label="Type" value={medType} onChange={(e) => setMedType(e.target.value)}>
+                <MenuItem value="rx">Rx (Prescription)</MenuItem>
+                <MenuItem value="otc">OTC (Over-the-counter)</MenuItem>
+                <MenuItem value="supplement">Supplement</MenuItem>
+              </Select>
+            </FormControl>
             <Box>
               <Typography variant="caption" color="text.secondary">Time of day</Typography>
               <ToggleButtonGroup
@@ -182,6 +203,22 @@ export default function Medications() {
                 ))}
               </ToggleButtonGroup>
             </Box>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              <TextField
+                label="Supply start date"
+                type="date"
+                value={supplyStartDate}
+                onChange={(e) => setSupplyStartDate(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+              />
+              <TextField
+                label="Days supply"
+                type="number"
+                inputProps={{ min: 1, max: 3650 }}
+                value={daysSupply}
+                onChange={(e) => setDaysSupply(e.target.value)}
+              />
+            </Stack>
 
             {((details?.suggested?.length || 0) > 0) && (
               <Box>
@@ -232,7 +269,16 @@ export default function Medications() {
             <Box key={slot}>
               <Typography variant="body2" sx={{ fontWeight: 600, textTransform: 'capitalize' }}>{slot}</Typography>
               <Stack spacing={1} sx={{ mt: 1 }}>
-                {myMeds.filter(m => (m.times_of_day || []).includes(slot)).map(m => (
+                {myMeds
+                  .filter(m => (m.times_of_day || []).includes(slot))
+                  .sort((a, b) => {
+                    const order = { rx: 0, otc: 1, supplement: 2 };
+                    const tA = (a.med_type || 'rx');
+                    const tB = (b.med_type || 'rx');
+                    if (order[tA] !== order[tB]) return order[tA] - order[tB];
+                    return (a.display_name || '').localeCompare(b.display_name || '');
+                  })
+                  .map(m => (
                   <Paper key={m._id} sx={{ p: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Box>
                       <Typography variant="body1" sx={{ fontWeight: 500 }}>{m.display_name}</Typography>
@@ -240,6 +286,26 @@ export default function Medications() {
                       <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
                         {(m.user_indications||[]).join(', ')}
                       </Typography>
+                      <Box sx={{ mt: 0.5 }}>
+                        <Chip size="small" label={(m.med_type || 'rx').toUpperCase()} />
+                        {(() => {
+                          const start = m.supply_start_date ? new Date(m.supply_start_date) : null;
+                          const days = m.days_supply || null;
+                          if (start && days) {
+                            const today = new Date();
+                            const elapsed = Math.max(0, Math.floor((today - start) / (1000*60*60*24)));
+                            const pctUsed = Math.min(100, Math.round((elapsed / days) * 100));
+                            const runout = new Date(start.getTime() + days * 24*60*60*1000);
+                            return (
+                              <>
+                                <Chip size="small" sx={{ ml: 1 }} label={`${Math.max(0, 100 - pctUsed)}% left`} />
+                                <Chip size="small" sx={{ ml: 1 }} label={`Run out: ${runout.toISOString().slice(0,10)}`} />
+                              </>
+                            );
+                          }
+                          return null;
+                        })()}
+                      </Box>
                     </Box>
                     <Box>
                       <IconButton sx={{ mr: 1 }} color="primary" onClick={() => startEdit(m)}>

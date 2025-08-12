@@ -43,7 +43,13 @@ router.get('/search', authenticateToken, async (req, res) => {
     }
     res.json({ success: true, data: results });
   } catch (error) {
-    return res.json({ success: true, data: { ingredient: null, strengths: [], atcClasses: [], epcClasses: [], suggested: [] } });
+    try {
+      // Fallback: if related lookups failed, still respond with empty structure
+      return res.json({ success: true, data: { ingredient: null, strengths: [], atcClasses: [], epcClasses: [], suggested: [] } });
+    } catch (e) {
+      // As a final guard, avoid 500s
+      res.json({ success: true, data: { ingredient: null, strengths: [], atcClasses: [], epcClasses: [], suggested: [] } });
+    }
   }
 });
 
@@ -102,6 +108,7 @@ router.post('/', authenticateToken, async (req, res) => {
       user_id: userId,
       display_name: body.display_name,
       is_supplement: !!body.is_supplement,
+      med_type: ['rx','otc','supplement'].includes((body.med_type||'').toLowerCase()) ? body.med_type.toLowerCase() : 'rx',
       rxcui: body.rxcui || null,
       ingredient_name: body.ingredient_name || null,
       brand_name: body.brand_name || null,
@@ -114,6 +121,8 @@ router.post('/', authenticateToken, async (req, res) => {
       times_of_day: Array.isArray(body.times_of_day) ? body.times_of_day : [],
       suggested_indications: Array.isArray(body.suggested_indications) ? body.suggested_indications : [],
       user_indications: Array.isArray(body.user_indications) ? body.user_indications : [],
+      supply_start_date: body.supply_start_date ? new Date(body.supply_start_date) : null,
+      days_supply: typeof body.days_supply === 'number' ? body.days_supply : null,
       notes: body.notes || ''
     };
 
@@ -159,6 +168,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
     const up = {
       display_name: body.display_name ?? med.display_name,
       is_supplement: body.is_supplement ?? med.is_supplement,
+      med_type: ['rx','otc','supplement'].includes((body.med_type||'').toLowerCase()) ? body.med_type.toLowerCase() : (med.med_type||'rx'),
       rxcui: body.rxcui ?? med.rxcui,
       ingredient_name: body.ingredient_name ?? med.ingredient_name,
       brand_name: body.brand_name ?? med.brand_name,
@@ -171,6 +181,8 @@ router.put('/:id', authenticateToken, async (req, res) => {
       times_of_day: Array.isArray(body.times_of_day) ? body.times_of_day : (med.times_of_day || []),
       suggested_indications: Array.isArray(body.suggested_indications) ? body.suggested_indications : (med.suggested_indications || []),
       user_indications: Array.isArray(body.user_indications) ? body.user_indications : (med.user_indications || []),
+      supply_start_date: body.supply_start_date ? new Date(body.supply_start_date) : (med.supply_start_date || null),
+      days_supply: typeof body.days_supply === 'number' ? body.days_supply : (med.days_supply || null),
       notes: body.notes ?? med.notes
     };
     Object.assign(med, up);
